@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>자동차공장</title>
   <style>
     * { box-sizing: border-box; }
@@ -13,6 +13,8 @@
       margin: 0; padding: 0;
       user-select: none;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation; /* 빠르게 톡톡 눌러도 더블탭 확대 안 됨 */
+      -webkit-text-size-adjust: 100%; /* 사파리 자동 글자 확대 방지 */
     }
     #app { max-width: 480px; min-height: 100vh; margin: 0 auto; padding: 20px 16px 36px; text-align: center; }
     h1 { font-size: clamp(20px, 6vw, 28px); color: #c62828; margin: 10px 0; }
@@ -779,6 +781,11 @@
     if (game.playerName) {
       document.getElementById('nameInput').value = game.playerName;
     }
+
+    // 📱 아이폰 사파리에서 두 손가락 확대(핀치 줌) 막기 (버튼 클릭은 그대로 동작)
+    document.addEventListener('gesturestart',  function (e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function (e) { e.preventDefault(); });
+    document.addEventListener('gestureend',    function (e) { e.preventDefault(); });
 
     showScreen('intro'); // 시작은 인트로 화면부터
     render();            // 처음 화면 그리기
