@@ -395,7 +395,7 @@
       pop.className = 'tap-pop ' + speed;
       pop.textContent = '+' + game.perClick + (speed === 'fast' ? ' 🔥' : '');
       pop.style.left = x + 'px';
-      pop.style.top = y + 'px';
+      pop.style.top = Math.max(y - 70, 14) + 'px'; // 손가락보다 위에 띄워서 안 가리게
       document.body.appendChild(pop);
       setTimeout(function () { pop.remove(); }, 700);
     }
