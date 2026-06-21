@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>태영이클리커</title>
+  <title>자동차공장</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -144,7 +144,7 @@
 
     <!-- 인트로(시작) 화면 -->
     <div id="intro">
-      <h1>🚗 태영이 자동차 공장 🔩</h1>
+      <h1>🚗 자동차 공장 🔩</h1>
       <p>큰 나사를 모아 멋진 자동차를 만들어요!</p>
       <button class="start-btn" onclick="showScreen('main')">▶ 시작하기</button>
       <div><button class="reset-btn" onclick="resetGame()">처음부터 다시</button></div>
@@ -273,10 +273,10 @@
       raceWins: 0,    // 레이싱에서 이긴 횟수
     };
 
-    const PART_COST = 70; // 부품 1개 = 나사 70개 (태영이 정함)
+    const PART_COST = 70; // 부품 1개 = 나사 70개
     const CAR_NAMES = ['장난감차', '자동차', '스포츠카', '슈퍼카'];
     const CAR_IMAGES = ['images/toy.jpg', 'images/normal.jpg', 'images/sports.png', 'images/super.png'];
-    // 각 자동차에 필요한 부품 수 (엄마·태영이 정함): 🧸15 · 🚗40 · 🏎️70 · 🦸100
+    // 각 자동차에 필요한 부품 수: 🧸15 · 🚗40 · 🏎️70 · 🦸100
     const CAR_COSTS = [15, 40, 70, 100];
     function carPartCost(stage) { return CAR_COSTS[stage]; }
 
@@ -555,10 +555,10 @@
     }
 
     // 게임 저장 / 처음부터 다시
-    function save() { try { localStorage.setItem('taeyoung_clicker', JSON.stringify(game)); } catch (e) {} }
+    function save() { try { localStorage.setItem('car_factory_clicker', JSON.stringify(game)); } catch (e) {} }
     function resetGame() {
       if (confirm('정말 처음부터 다시 시작할까요? 모은 나사·자동차가 모두 사라져요!')) {
-        localStorage.removeItem('taeyoung_clicker');
+        localStorage.removeItem('car_factory_clicker');
         location.reload();
       }
     }
@@ -647,7 +647,7 @@
     }, 1000); // 1000밀리초 = 1초
 
     // 저장된 게임 불러오기 (전에 하던 게 있으면 이어서)
-    var saved = localStorage.getItem('taeyoung_clicker');
+    var saved = localStorage.getItem('car_factory_clicker');
     if (saved) {
       try {
         var data = JSON.parse(saved);
