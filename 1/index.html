@@ -169,6 +169,22 @@
     .rank-row .who { font-weight: bold; color: #333; }
     .rank-row .when { color: #e65100; font-weight: bold; white-space: nowrap; }
     .rank-row.me { background: #fff8e1; border-radius: 10px; }
+
+    /* 👆 터치 피드백 — 누른 자리에 떠오르는 +숫자 (빠를수록 크고 빨강) */
+    .tap-pop {
+      position: fixed; transform: translate(-50%, -50%);
+      font-weight: 900; pointer-events: none; z-index: 2000;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+      animation: tap-rise 0.7s ease-out forwards;
+    }
+    .tap-pop.slow { font-size: 22px; color: #42a5f5; }  /* 천천히: 작고 파랑 */
+    .tap-pop.mid  { font-size: 30px; color: #fb8c00; }  /* 보통: 주황 */
+    .tap-pop.fast { font-size: 42px; color: #e53935; }  /* 빠르게: 크고 빨강 */
+    @keyframes tap-rise {
+      0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+      25%  { transform: translate(-50%, -85%) scale(1.15); }
+      100% { opacity: 0; transform: translate(-50%, -165%) scale(1); }
+    }
   </style>
 </head>
 <body>
@@ -195,7 +211,7 @@
       <div class="car-now" id="carNow">🚗 장난감차 만드는 중</div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
       <div class="progress-text" id="progressText">부품 0/15개 (0%)</div>
-      <img id="carImage" class="car-image" src="images/toy.jpg" alt="지금 만드는 자동차" onclick="clickScrew()">
+      <img id="carImage" class="car-image" src="images/toy.jpg" alt="지금 만드는 자동차" onclick="clickScrew(event)">
       <div class="tap-hint">👆 자동차를 톡톡 누르면 나사가 모여요!</div>
       <div class="clear-message" id="clearMessage">🎉 축하해요! 슈퍼카 완성! 🏁<br>다음은 레이싱이에요!</div>
 
@@ -213,7 +229,7 @@
         <span class="action-name">🔧 부품 만들기</span>
         <span class="action-info">나사 70개</span>
       </button>
-      <button class="action-item" id="actScrew" onclick="clickScrew()">
+      <button class="action-item" id="actScrew" onclick="clickScrew(event)">
         <span class="action-name">🔩 나사 모으기</span>
         <span class="action-info">한 번 +<span class="per-click">1</span>개</span>
       </button>
@@ -356,7 +372,33 @@
     }
 
     // 🔩 나사 모으기 (자동차 그림 탭 또는 '나사 모으기' 버튼)
-    function clickScrew() { game.screws += game.perClick; render(); }
+    function clickScrew(e) {
+      game.screws += game.perClick;
+      if (e) showTapFeedback(e);   // 👆 누른 자리에 +숫자 띄우기
+      render();
+    }
+
+    // 👆 터치 피드백 — 누른 자리에 +숫자, 누르는 속도(빠름/보통/천천히)에 따라 모양 다르게
+    var lastTapTime = 0;
+    function showTapFeedback(e) {
+      var now = Date.now();
+      var gap = now - lastTapTime;  // 직전 탭과의 시간 간격(ms) — 작을수록 빠르게 누름
+      lastTapTime = now;
+      // 누른 화면 좌표 (손가락 터치 또는 마우스)
+      var x, y;
+      if (e.changedTouches && e.changedTouches[0]) { x = e.changedTouches[0].clientX; y = e.changedTouches[0].clientY; }
+      else if (e.clientX !== undefined) { x = e.clientX; y = e.clientY; }
+      else { var r = e.target.getBoundingClientRect(); x = r.left + r.width / 2; y = r.top + r.height / 2; }
+      // 속도 단계: 빠름(<180ms) / 보통(<400ms) / 천천히
+      var speed = (gap < 180) ? 'fast' : (gap < 400 ? 'mid' : 'slow');
+      var pop = document.createElement('div');
+      pop.className = 'tap-pop ' + speed;
+      pop.textContent = '+' + game.perClick + (speed === 'fast' ? ' 🔥' : '');
+      pop.style.left = x + 'px';
+      pop.style.top = y + 'px';
+      document.body.appendChild(pop);
+      setTimeout(function () { pop.remove(); }, 700);
+    }
 
     // 🪛 더 센 드라이버 — 한 번에 나사 +1 더, 값은 1.5배씩 오름
     function buyDriver() {
