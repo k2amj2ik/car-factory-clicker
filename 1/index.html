@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자동차공장</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: linear-gradient(160deg, #fff3e0 0%, #ffccbc 100%);
+      background-attachment: fixed;
+      margin: 0; padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #app { max-width: 480px; min-height: 100vh; margin: 0 auto; padding: 20px 16px 36px; text-align: center; }
+    h1 { font-size: clamp(20px, 6vw, 28px); color: #c62828; margin: 10px 0; }
+
+    /* 인트로(시작) 화면 */
+    #intro { padding-top: 40px; }
+    #intro p { font-size: clamp(15px, 4.5vw, 18px); color: #555; }
+    button { font-family: inherit; cursor: pointer; border: none; }
+    .start-btn { font-size: clamp(19px, 5.5vw, 24px); background: #e53935; color: #fff; border-radius: 20px; padding: 16px 40px; margin-top: 24px; }
+    .start-btn:active { transform: scale(0.95); }
+    .reset-btn { margin-top: 30px; background: none; color: #b0a89f; font-size: 14px; text-decoration: underline; }
+
+    /* 상단: 지금 만드는 차 + 진행률 */
+    .car-now { font-size: clamp(16px, 5vw, 20px); color: #c62828; font-weight: bold; margin: 4px 0; }
+    .progress-bar-bg { background: #ffe0b2; border-radius: 12px; height: 22px; overflow: hidden; margin: 8px auto; max-width: 340px; box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12); }
+    .progress-bar-fill { background: linear-gradient(90deg, #ffa726, #e53935); height: 100%; width: 0%; transition: width 0.25s; }
+    .progress-text { font-size: clamp(13px, 4vw, 15px); color: #6d4c41; margin-bottom: 6px; }
+    .car-image { width: clamp(150px, 52vw, 230px); height: auto; display: block; margin: 4px auto; border-radius: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); background: #fff; cursor: pointer; }
+    .car-image:active { transform: scale(0.96); }
+    .tap-hint { font-size: clamp(12px, 3.6vw, 14px); color: #999; margin: 2px 0 8px; }
+    .clear-message { display: none; background: linear-gradient(135deg, #ffd54f, #ff8a65); color: #fff; font-size: clamp(16px, 5vw, 22px); font-weight: bold; line-height: 1.5; padding: 16px; border-radius: 18px; margin: 12px 0; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2); }
+
+    /* 중간: 내가 모은 것 */
+    .resource-area { background: #fff; border-radius: 14px; padding: 12px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); font-size: clamp(15px, 4.6vw, 20px); font-weight: bold; color: #333; }
+    .pps { color: #e65100; }
+
+    /* 하단: 할 수 있는 액션 */
+    .action-item {
+      display: flex; justify-content: space-between; align-items: center;
+      width: 100%; background: #fff; border: 2px solid #ffab91;
+      border-radius: 14px; padding: 14px 16px; margin: 8px 0; text-align: left;
+    }
+    .action-item:active { transform: scale(0.98); }
+    .action-item:disabled { opacity: 0.45; }
+    .action-name { font-size: clamp(15px, 4.5vw, 18px); font-weight: bold; color: #333; }
+    .action-info { font-size: clamp(13px, 4vw, 15px); color: #e65100; font-weight: bold; white-space: nowrap; }
+    /* 지금 할 수 있는 액션 강조 (초록 반짝) / 못 하는 액션 흐림 */
+    .action-item.ready { border-color: #43a047; background: #e8f5e9; animation: pulse 1.1s infinite; }
+    .action-item.ready .action-name, .action-item.ready .action-info { color: #2e7d32; }
+    .action-item.cant { opacity: 0.5; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(67, 160, 71, 0.5); }
+      50% { box-shadow: 0 0 0 9px rgba(67, 160, 71, 0); }
+    }
+
+    /* 🏁 드래그 레이싱 들어가기 버튼 (슈퍼카 완성 후 메인 맨 위에 등장) */
+    .race-entry { display: none; width: 100%; font-size: clamp(17px, 5vw, 21px); font-weight: bold;
+      background: linear-gradient(135deg, #ab47bc, #5e35b1); color: #fff; border-radius: 16px;
+      padding: 15px; margin: 4px 0 12px; box-shadow: 0 4px 14px rgba(94, 53, 177, 0.35);
+      animation: pulse-race 1.3s infinite; }
+    .race-entry:active { transform: scale(0.97); }
+    @keyframes pulse-race {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(123, 31, 162, 0.55); }
+      50% { box-shadow: 0 0 0 10px rgba(123, 31, 162, 0); }
+    }
+
+    /* 🏁 레이싱 화면 */
+    #race { display: none; }
+    #race h1 { color: #5e35b1; }
+    .signal { font-size: clamp(26px, 8vw, 36px); letter-spacing: 6px; margin: 6px 0 4px;
+      min-height: 44px; font-weight: bold; }
+    .signal .go { color: #2e7d32; }
+    .track { background: #455a64; border-radius: 16px; padding: 10px 10px 6px; margin: 8px 0 12px;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.3); }
+    .lane { position: relative; display: flex; align-items: center; height: 52px;
+      background: #607d8b; border-radius: 10px; margin: 7px 0;
+      border-bottom: 4px dashed rgba(255, 255, 255, 0.55); }
+    .lane-label { width: 50px; font-size: 12px; color: #fff; font-weight: bold; flex: none; text-align: center; }
+    .lane-road { position: relative; flex: 1; height: 100%; margin-right: 4px; }
+    .race-car { position: absolute; left: 0%; top: 50%; transform: translateY(-50%);
+      font-size: clamp(26px, 8vw, 34px); white-space: nowrap; }
+    .finish-flag { font-size: clamp(22px, 7vw, 30px); flex: none; padding-right: 4px; }
+    .race-result { min-height: 30px; font-size: clamp(17px, 5.5vw, 23px); font-weight: bold;
+      margin: 6px 0; line-height: 1.4; }
+    .race-result.win { color: #2e7d32; }
+    .race-result.lose { color: #c62828; }
+    .engine-btn { width: 100%; display: flex; justify-content: space-between; align-items: center;
+      background: #fff; border: 2px solid #b39ddb; border-radius: 14px; padding: 14px 16px; margin: 8px 0;
+      text-align: left; font-size: clamp(14px, 4.4vw, 17px); font-weight: bold; color: #4527a0; }
+    .engine-btn:active { transform: scale(0.98); }
+    .engine-btn.cant { opacity: 0.5; }
+    .engine-stars { color: #f9a825; white-space: nowrap; }
+    .race-go-btn { width: 100%; font-size: clamp(19px, 5.5vw, 24px); font-weight: bold;
+      background: #43a047; color: #fff; border-radius: 16px; padding: 16px; margin: 6px 0; }
+    .race-go-btn:active { transform: scale(0.97); }
+    .race-go-btn:disabled { opacity: 0.55; }
+    .back-btn { margin-top: 12px; background: none; color: #7e57c2; font-size: 15px;
+      text-decoration: underline; font-weight: bold; }
+
+    /* 🔩 나사 비 받기 보너스 게임 들어가기 버튼 (메인 맨 위, 항상 보임) */
+    .catch-entry { width: 100%; font-size: clamp(16px, 4.8vw, 20px); font-weight: bold;
+      background: linear-gradient(135deg, #26c6da, #00897b); color: #fff; border-radius: 16px;
+      padding: 13px; margin: 4px 0 10px; box-shadow: 0 4px 12px rgba(0, 137, 123, 0.3); }
+    .catch-entry:active { transform: scale(0.97); }
+
+    /* 🔩 나사 비 받기 화면 */
+    #catch { display: none; }
+    #catch h1 { color: #00897b; }
+    .catch-top { display: flex; justify-content: space-around; align-items: center;
+      font-size: clamp(15px, 4.6vw, 19px); font-weight: bold; color: #00695c; margin: 6px 0; }
+    .catch-top .big { font-size: clamp(20px, 6vw, 26px); color: #e65100; }
+    /* 나사가 떨어지는 놀이판 */
+    .catch-field { position: relative; width: 100%; height: 360px; overflow: hidden;
+      background: linear-gradient(180deg, #b2ebf2 0%, #e0f7fa 100%);
+      border: 3px solid #4dd0e1; border-radius: 18px; margin: 8px 0;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1); }
+    /* 떨어지는 나사 한 개 */
+    .falling { position: absolute; top: -50px; font-size: 38px; cursor: pointer;
+      user-select: none; line-height: 1; touch-action: none; }
+    .falling:active { transform: scale(0.8); }
+    .falling.gold { filter: drop-shadow(0 0 6px gold); }
+    /* 받았을 때 잠깐 뜨는 +숫자 */
+    .pop { position: absolute; font-size: 22px; font-weight: bold; color: #e65100;
+      pointer-events: none; animation: popup 0.6s ease-out forwards; }
+    @keyframes popup {
+      0% { transform: translateY(0); opacity: 1; }
+      100% { transform: translateY(-40px); opacity: 0; }
+    }
+    .catch-start-btn { width: 100%; font-size: clamp(19px, 5.5vw, 24px); font-weight: bold;
+      background: #00897b; color: #fff; border-radius: 16px; padding: 16px; margin: 6px 0; }
+    .catch-start-btn:active { transform: scale(0.97); }
+    .catch-start-btn:disabled { opacity: 0.55; }
+    .catch-result { min-height: 28px; font-size: clamp(16px, 5vw, 22px); font-weight: bold;
+      color: #00695c; margin: 6px 0; line-height: 1.4; }
+
+    /* 인트로 이름 입력칸 */
+    .name-input { font-size: clamp(16px, 5vw, 20px); text-align: center; border: 2px solid #ffab91;
+      border-radius: 14px; padding: 12px 16px; margin-top: 22px; width: 80%; max-width: 280px;
+      font-family: inherit; color: #333; outline: none; display: block; margin-left: auto; margin-right: auto; }
+    .name-input:focus { border-color: #e53935; }
+
+    /* 🏆 랭킹 보기 들어가기 버튼 (메인 맨 위, 항상 보임) */
+    .rank-entry { width: 100%; font-size: clamp(16px, 4.8vw, 20px); font-weight: bold;
+      background: linear-gradient(135deg, #ffca28, #f57f17); color: #fff; border-radius: 16px;
+      padding: 13px; margin: 4px 0 10px; box-shadow: 0 4px 12px rgba(245, 127, 23, 0.3); }
+    .rank-entry:active { transform: scale(0.97); }
+
+    /* 🏆 랭킹 화면 */
+    #ranking { display: none; }
+    #ranking h1 { color: #f57f17; }
+    .rank-tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
+    .rank-tab { font-size: clamp(13px, 4vw, 16px); font-weight: bold; background: #fff;
+      border: 2px solid #ffca28; color: #f57f17; border-radius: 12px; padding: 9px 12px; }
+    .rank-tab.on { background: #f57f17; color: #fff; }
+    .rank-tab:active { transform: scale(0.96); }
+    .rank-list { background: #fff; border-radius: 16px; padding: 14px; margin: 10px 0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); min-height: 120px; }
+    .rank-list h3 { color: #f57f17; margin: 4px 0 12px; font-size: clamp(16px, 5vw, 20px); }
+    .rank-row { display: flex; justify-content: space-between; align-items: center;
+      font-size: clamp(15px, 4.6vw, 18px); padding: 10px 8px; border-bottom: 1px dashed #ffe0b2; }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-row .who { font-weight: bold; color: #333; }
+    .rank-row .when { color: #e65100; font-weight: bold; white-space: nowrap; }
+    .rank-row.me { background: #fff8e1; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+
+    <!-- 인트로(시작) 화면 -->
+    <div id="intro">
+      <h1>🚗 자동차 공장 🔩</h1>
+      <p>큰 나사를 모아 멋진 자동차를 만들어요!</p>
+      <input id="nameInput" maxlength="12" placeholder="이름을 적어요 (예: 친구)" class="name-input" />
+      <button class="start-btn" onclick="startGame()">▶ 시작하기</button>
+      <div><button class="reset-btn" onclick="resetGame()">처음부터 다시</button></div>
+    </div>
+
+    <!-- 메인 화면 -->
+    <div id="main">
+      <!-- 🏆 랭킹 보기 (항상 보임) -->
+      <button class="rank-entry" onclick="openRanking(Math.min(game.carStage, 3))">🏆 랭킹 보기 (누가 제일 빨리?)</button>
+      <!-- 보너스 게임: 나사 비 받기 (항상 보임) -->
+      <button class="catch-entry" onclick="showScreen('catch')">🔩 나사 비 받기 게임 ☔ (보너스 나사!)</button>
+      <!-- 슈퍼카 완성 후 등장: 드래그 레이싱 들어가기 -->
+      <button class="race-entry" id="raceEntry" onclick="showScreen('race')">🏁 드래그 레이싱 하러 가기 🏎️💨</button>
+      <!-- 상단: 지금 만드는 차 + 진행률 -->
+      <div class="car-now" id="carNow">🚗 장난감차 만드는 중</div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
+      <div class="progress-text" id="progressText">부품 0/15개 (0%)</div>
+      <img id="carImage" class="car-image" src="images/toy.jpg" alt="지금 만드는 자동차" onclick="clickScrew()">
+      <div class="tap-hint">👆 자동차를 톡톡 누르면 나사가 모여요!</div>
+      <div class="clear-message" id="clearMessage">🎉 축하해요! 슈퍼카 완성! 🏁<br>다음은 레이싱이에요!</div>
+
+      <!-- 중간: 내가 모은 것 -->
+      <div class="resource-area">
+        🔩 나사: <span class="screw-num">0</span>(초당+<span class="pps">0</span>) &nbsp; 🔧 부품: <span class="part-num">0</span>
+      </div>
+
+      <!-- 하단: 할 수 있는 액션 (위에서부터 순서) -->
+      <button class="action-item" id="actBuild" onclick="buildCar()">
+        <span class="action-name">🚗 자동차 조립</span>
+        <span class="action-info" id="buildInfo">부품 15개</span>
+      </button>
+      <button class="action-item" id="actPart" onclick="makePart()">
+        <span class="action-name">🔧 부품 만들기</span>
+        <span class="action-info">나사 70개</span>
+      </button>
+      <button class="action-item" id="actScrew" onclick="clickScrew()">
+        <span class="action-name">🔩 나사 모으기</span>
+        <span class="action-info">한 번 +<span class="per-click">1</span>개</span>
+      </button>
+      <button class="action-item" id="actRobot" onclick="buyRobot()">
+        <span class="action-name">🤖 자동 로봇</span>
+        <span class="action-info">나사 <span id="robotCost">150</span>개</span>
+      </button>
+      <button class="action-item" id="actDriver" onclick="buyDriver()">
+        <span class="action-name">🪛 더 센 드라이버</span>
+        <span class="action-info">나사 <span id="driverCost">50</span>개</span>
+      </button>
+    </div>
+
+    <!-- 🏁 드래그 레이싱 화면 -->
+    <div id="race">
+      <h1>🏁 드래그 레이싱 🏎️</h1>
+
+      <!-- 신호등 -->
+      <div class="signal" id="signal">🔴 ⚪ ⚪</div>
+
+      <!-- 경주로: 위=내 차, 아래=컴퓨터 차 -->
+      <div class="track">
+        <div class="lane">
+          <span class="lane-label">내 차</span>
+          <div class="lane-road"><span class="race-car" id="playerCar">🏎️</span></div>
+          <span class="finish-flag">🏁</span>
+        </div>
+        <div class="lane">
+          <span class="lane-label">컴퓨터</span>
+          <div class="lane-road"><span class="race-car" id="compCar">🚗</span></div>
+          <span class="finish-flag">🏁</span>
+        </div>
+      </div>
+
+      <!-- 결과 메시지 -->
+      <div class="race-result" id="raceResult"></div>
+
+      <!-- 내 속도 막대 -->
+      <div class="resource-area" style="text-align:left;">
+        <div style="margin-bottom:6px;">⚡ 내 속도 (Lv.<span id="engineLv">0</span>)</div>
+        <div class="progress-bar-bg" style="max-width:none; margin:0;">
+          <div class="progress-bar-fill" id="speedBar" style="background:linear-gradient(90deg,#7e57c2,#5e35b1);"></div>
+        </div>
+      </div>
+
+      <!-- 엔진 업그레이드 (나사로 속도 올리기) -->
+      <button class="engine-btn" id="engineBtn" onclick="buyEngine()">
+        <span>⚡ 엔진 업그레이드</span>
+        <span>나사 <span id="engineCost">100</span>개</span>
+      </button>
+
+      <!-- 지금 가진 나사 -->
+      <div class="resource-area">🔩 나사: <span class="screw-num">0</span>개</div>
+
+      <!-- 출발 / 돌아가기 -->
+      <button class="race-go-btn" id="raceGoBtn" onclick="startRace()">🏁 출발!</button>
+      <div><button class="back-btn" onclick="leaveRace()">← 공장으로 돌아가기</button></div>
+    </div>
+
+    <!-- 🔩 나사 비 받기 보너스 게임 화면 -->
+    <div id="catch">
+      <h1>🔩 나사 비 받기 ☔</h1>
+      <div class="catch-top">
+        <div>⏱️ 남은 시간 <span class="big" id="catchTime">10</span>초</div>
+        <div>🔩 받은 나사 <span class="big" id="catchScore">0</span></div>
+      </div>
+
+      <!-- 나사가 우르르 떨어지는 놀이판 -->
+      <div class="catch-field" id="catchField"></div>
+
+      <div class="catch-result" id="catchResult">떨어지는 나사를 손가락으로 톡톡 받아요! 🌟별나사는 5개!</div>
+
+      <button class="catch-start-btn" id="catchStartBtn" onclick="startCatch()">▶ 시작!</button>
+      <div class="resource-area">🔩 지금 가진 나사: <span class="screw-num">0</span>개</div>
+      <div><button class="back-btn" onclick="leaveCatch()">← 공장으로 돌아가기</button></div>
+    </div>
+
+    <!-- 🏆 랭킹 화면 -->
+    <div id="ranking">
+      <h1>🏆 스피드런 랭킹</h1>
+      <p style="color:#6d4c41; font-size:clamp(13px,4vw,15px); margin:2px 0 6px;">누가 자동차를 제일 빨리 만들었나?</p>
+      <div class="rank-tabs">
+        <button class="rank-tab" id="rankTab0" onclick="openRanking(0)">🧸 장난감차</button>
+        <button class="rank-tab" id="rankTab1" onclick="openRanking(1)">🚗 자동차</button>
+        <button class="rank-tab" id="rankTab2" onclick="openRanking(2)">🏎️ 스포츠카</button>
+        <button class="rank-tab" id="rankTab3" onclick="openRanking(3)">🦸 슈퍼카</button>
+      </div>
+      <div class="rank-list" id="rankList">불러오는 중...</div>
+      <div><button class="back-btn" onclick="showScreen('main')">← 공장으로 돌아가기</button></div>
+    </div>
+
+  </div><!-- #app -->
+
+  <script>
+    // 게임의 "기억 메모지"
+    let game = {
+      screws: 0,      // 지금 가진 나사
+      perClick: 1,    // 한 번 누를 때 생기는 나사
+      driverCost: 50, // 다음 드라이버 값
+      robots: 0,      // 자동 로봇 개수 (1초마다 이 수만큼 나사)
+      robotCost: 150, // 다음 자동 로봇 값
+      parts: 0,       // 지금 가진 부품
+      carStage: 0,    // 지금 만드는 차: 0=장난감차 1=자동차 2=스포츠카 3=슈퍼카 4=다 완성
+      engineLevel: 0, // 🏁 레이싱 엔진 단계 (높을수록 빠름)
+      engineCost: 100,// 다음 엔진 업그레이드 값
+      raceWins: 0,    // 레이싱에서 이긴 횟수
+      playerName: '', // 🏆 내 이름 (랭킹용)
+      playSeconds: 0, // 🏆 게임 시작 후 흐른 시간(초)
+      reported: {},   // 🏆 서버에 이미 보낸 등급 표시 {0:true,...}
+    };
+
+    // 🏆 랭킹 서버 주소 (점수를 보내고 순위를 받아오는 곳)
+    const SERVER_URL = 'https://car-factory-clicker-server.k2amj2ik.workers.dev';
+
+    const PART_COST = 70; // 부품 1개 = 나사 70개
+    const CAR_NAMES = ['장난감차', '자동차', '스포츠카', '슈퍼카'];
+    const CAR_IMAGES = ['images/toy.jpg', 'images/normal.jpg', 'images/sports.png', 'images/super.png'];
+    // 각 자동차에 필요한 부품 수: 🧸15 · 🚗40 · 🏎️70 · 🦸100
+    const CAR_COSTS = [15, 40, 70, 100];
+    function carPartCost(stage) { return CAR_COSTS[stage]; }
+
+    // ▶ 시작하기 — 이름을 받고 게임(main)으로
+    function startGame() {
+      var n = document.getElementById('nameInput').value.trim();
+      if (!n) { alert('이름을 적어줘요!'); return; }
+      game.playerName = n;
+      showScreen('main');
+      save();
+    }
+
+    // 화면 전환: intro(시작) / main(게임) / race(레이싱) / catch(나사비) / ranking(랭킹)
+    function showScreen(name) {
+      document.getElementById('intro').style.display   = (name === 'intro')   ? 'block' : 'none';
+      document.getElementById('main').style.display    = (name === 'main')    ? 'block' : 'none';
+      document.getElementById('race').style.display    = (name === 'race')    ? 'block' : 'none';
+      document.getElementById('catch').style.display   = (name === 'catch')   ? 'block' : 'none';
+      document.getElementById('ranking').style.display = (name === 'ranking') ? 'block' : 'none';
+      if (name === 'race') renderRace(); // 레이싱 화면 들어가면 속도 막대 등 그리기
+      if (name === 'catch') render();    // 나사 비 화면 들어가면 가진 나사 숫자 갱신
+    }
+
+    // 🔩 나사 모으기 (자동차 그림 탭 또는 '나사 모으기' 버튼)
+    function clickScrew() { game.screws += game.perClick; render(); }
+
+    // 🪛 더 센 드라이버 — 한 번에 나사 +1 더, 값은 1.5배씩 오름
+    function buyDriver() {
+      if (game.screws < game.driverCost) return; // 나사 부족하면 아무 일 없음
+      game.screws -= game.driverCost;
+      game.perClick += 1;
+      game.driverCost = Math.floor(game.driverCost * 1.5);
+      render();
+    }
+
+    // 🤖 자동 로봇 — 1초마다 나사 자동, 값은 1.5배씩 오름
+    function buyRobot() {
+      if (game.screws < game.robotCost) return;
+      game.screws -= game.robotCost;
+      game.robots += 1;
+      game.robotCost = Math.floor(game.robotCost * 1.5);
+      render();
+    }
+
+    // 🔧 부품 만들기 — 나사 70개를 부품 1개로
+    function makePart() {
+      if (game.screws < PART_COST) return;
+      game.screws -= PART_COST;
+      game.parts += 1;
+      render();
+    }
+
+    // 🚗 자동차 조립 — 부품을 모아 완성 → 다음 등급으로 변신
+    function buildCar() {
+      if (game.carStage >= 4) return;          // 이미 슈퍼카까지 다 완성
+      var need = carPartCost(game.carStage);   // 15, 40, 70, 100
+      if (game.parts < need) return;           // 부품 부족하면 아무 일 없음
+      game.parts -= need;
+      reportRecord(game.carStage);             // 🏆 방금 완성한 등급(0~3) 기록 보내기
+      game.carStage += 1;                      // 다음 등급으로 변신!
+      render();
+    }
+
+    // 🏆 기록 보내기 — "이름+등급+플레이시간"을 서버에 (같은 등급은 한 번만)
+    function reportRecord(stage) {
+      if (!game.playerName) return;            // 이름 없으면 안 보냄
+      if (game.reported[stage]) return;        // 같은 등급은 한 번만
+      game.reported[stage] = true;
+      save();
+      try {
+        fetch(SERVER_URL + '/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: game.playerName, car_stage: stage, play_seconds: game.playSeconds }),
+        }).catch(function () {});              // 실패해도 게임은 그대로
+      } catch (e) {}
+    }
+
+    // 🏆 시간을 사람이 읽기 좋게 (예: 3700초 -> "1시간 1분")
+    function fmtTime(sec) {
+      var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60);
+      if (h > 0) return h + '시간 ' + m + '분';
+      if (m > 0) return m + '분';
+      return sec + '초';
+    }
+
+    // 🏆 랭킹 열기/그리기 — 등급(stage 0~3)의 순위를 서버에서 받아 보여줌
+    async function openRanking(stage) {
+      showScreen('ranking');
+      // 탭 강조(누른 등급만 색칠)
+      for (var i = 0; i < 4; i++) {
+        document.getElementById('rankTab' + i).classList.toggle('on', i === stage);
+      }
+      var box = document.getElementById('rankList');
+      box.textContent = '불러오는 중...';
+      var names = ['장난감차', '자동차', '스포츠카', '슈퍼카'];
+      try {
+        var res = await fetch(SERVER_URL + '/ranking?stage=' + stage);
+        var list = await res.json();
+        if (!list.length) { box.textContent = '아직 ' + names[stage] + '를 만든 친구가 없어요!'; return; }
+        box.innerHTML = '<h3>🏆 ' + names[stage] + ' 빨리 만들기</h3>' +
+          list.map(function (r, i) {
+            var medal = ['🥇', '🥈', '🥉'][i] || (i + 1) + '등';
+            var mine = (r.name === game.playerName) ? ' me' : '';
+            return '<div class="rank-row' + mine + '"><span class="who">' + medal + ' ' + escapeHtml(r.name) +
+              '</span><span class="when">' + fmtTime(r.play_seconds) + '</span></div>';
+          }).join('');
+      } catch (e) {
+        box.textContent = '랭킹을 못 불러왔어요(인터넷 확인). 잠시 후 다시!';
+      }
+    }
+
+    // 이름에 <,>,& 같은 글자가 있어도 안전하게 보여주기
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // ===== 🏁 드래그 레이싱 =====
+    // 레이싱이 지금 달리는 중인지, 두 차의 위치(0~100)를 적어두는 메모지
+    var raceState = { running: false, playerPos: 0, compPos: 0, token: 0 };
+
+    // ⚡ 엔진 업그레이드 — 나사로 속도 단계를 +1 (값은 1.5배씩 오름)
+    function buyEngine() {
+      if (raceState.running) return;            // 달리는 중엔 못 삼
+      if (game.screws < game.engineCost) return; // 나사 부족하면 아무 일 없음
+      game.screws -= game.engineCost;
+      game.engineLevel += 1;
+      game.engineCost = Math.floor(game.engineCost * 1.5);
+      render();      // 나사 숫자 갱신
+      renderRace();  // 속도 막대·엔진 값 갱신
+    }
+
+    // 레이싱 화면 그리기 — 속도 막대, 엔진 값, 나사
+    function renderRace() {
+      document.getElementById('engineLv').textContent = game.engineLevel;
+      document.getElementById('engineCost').textContent = game.engineCost;
+      // 속도 막대: 엔진 단계가 높을수록 길어짐 (최대 100%)
+      var pct = Math.min(100, 12 + game.engineLevel * 11);
+      document.getElementById('speedBar').style.width = pct + '%';
+      // 나사 부족하면 엔진 버튼 흐리게
+      var eb = document.getElementById('engineBtn');
+      eb.classList.toggle('cant', game.screws < game.engineCost);
+    }
+
+    // 두 차를 경주로 위에 그리기 (위치 0~100 → 왼쪽 0~90%)
+    function updateCarPositions() {
+      document.getElementById('playerCar').style.left = (raceState.playerPos * 0.9) + '%';
+      document.getElementById('compCar').style.left   = (raceState.compPos * 0.9) + '%';
+    }
+
+    // 🏁 출발! — 신호등 3,2,1 → 초록불 → 자동으로 달리기 시작
+    function startRace() {
+      if (raceState.running) return;
+      raceState.running = true;
+      raceState.token = (raceState.token || 0) + 1; // 이번 경주의 회차 번호
+      var myToken = raceState.token;
+      raceState.playerPos = 0;
+      raceState.compPos = 0;
+      updateCarPositions();
+      var result = document.getElementById('raceResult');
+      result.textContent = '';
+      result.className = 'race-result';
+      document.getElementById('raceGoBtn').disabled = true;
+      document.getElementById('engineBtn').disabled = true;
+
+      var sig = document.getElementById('signal');
+      sig.innerHTML = '🔴 ⚪ ⚪';
+      setTimeout(function () { sig.innerHTML = '🔴 🔴 ⚪'; }, 600);
+      setTimeout(function () { sig.innerHTML = '🔴 🔴 🔴'; }, 1200);
+      setTimeout(function () {
+        // 그새 돌아가기를 눌렀으면(회차 번호가 바뀌었으면) 출발 안 함
+        if (!raceState.running || raceState.token !== myToken) return;
+        sig.innerHTML = '<span class="go">🟢 출발!</span>';
+        beginRun(myToken);
+      }, 1800);
+    }
+
+    // 초록불 이후 실제 달리기 (부드럽게 움직임)
+    function beginRun(myToken) {
+      // 내 차 속도: 엔진 단계가 높을수록 빠름 / 컴퓨터: 정해진 속도 + 조금 들쭉날쭉
+      // Lv 0에서도 가끔 이길 수 있고, 엔진을 올릴수록 확실히 빨라짐
+      var playerSpeed = 24 + game.engineLevel * 4; // 1초에 가는 양
+      var compSpeed   = 22 + Math.random() * 5;
+      var last = null;
+      function frame(now) {
+        // 경주가 멈췄거나(돌아가기) 다른 회차가 시작됐으면 이 달리기는 끝
+        if (!raceState.running || raceState.token !== myToken) return;
+        if (last === null) last = now;
+        var dt = (now - last) / 1000; // 지난 시간(초)
+        last = now;
+        raceState.playerPos += playerSpeed * dt;
+        raceState.compPos   += compSpeed * dt;
+        var finished = (raceState.playerPos >= 100 || raceState.compPos >= 100);
+        if (finished) {
+          raceState.playerPos = Math.min(raceState.playerPos, 100);
+          raceState.compPos   = Math.min(raceState.compPos, 100);
+        }
+        updateCarPositions();
+        if (finished) {
+          finishRace(raceState.playerPos >= raceState.compPos);
+        } else {
+          requestAnimationFrame(frame);
+        }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // 경주 도중에 공장으로 돌아가면 깔끔히 멈추기 (뒤에서 안 돌게)
+    function leaveRace() {
+      if (raceState.running) {
+        raceState.running = false; // 달리기 멈춤 (회차 번호와 함께 frame이 스스로 멈춤)
+        document.getElementById('raceGoBtn').disabled = false;
+        document.getElementById('engineBtn').disabled = false;
+        document.getElementById('signal').innerHTML = '🔴 ⚪ ⚪';
+      }
+      showScreen('main');
+    }
+
+    // 결승선 도착 — 이겼는지 졌는지 알려주기
+    function finishRace(playerWon) {
+      raceState.running = false;
+      document.getElementById('raceGoBtn').disabled = false;
+      document.getElementById('engineBtn').disabled = false;
+      document.getElementById('raceGoBtn').textContent = '🏁 다시 출발!';
+      var result = document.getElementById('raceResult');
+      if (playerWon) {
+        game.raceWins += 1;
+        result.textContent = '🏆 이겼다! 신난다! (이긴 횟수: ' + game.raceWins + ')';
+        result.className = 'race-result win';
+      } else {
+        result.textContent = '😅 졌어요... 엔진을 올리고 다시 도전!';
+        result.className = 'race-result lose';
+      }
+      save();
+      renderRace();
+    }
+
+    // ===== 🔩 나사 비 받기 보너스 게임 =====
+    // 지금 이 게임이 돌아가는 중인지, 점수, 타이머들을 적어두는 메모지
+    var catchState = { running: false, score: 0, timeLeft: 10, timers: [], raf: 0 };
+
+    // ▶ 시작! — 10초 동안 나사가 떨어지고, 톡톡 받으면 점수가 올라감
+    function startCatch() {
+      if (catchState.running) return;
+      catchState.running = true;
+      catchState.score = 0;
+      catchState.timeLeft = 10;
+      catchState.timers = [];
+      var field = document.getElementById('catchField');
+      field.innerHTML = '';                       // 놀이판 비우기
+      document.getElementById('catchScore').textContent = 0;
+      document.getElementById('catchTime').textContent = 10;
+      document.getElementById('catchResult').textContent = '받아라! 🔩🔩🔩';
+      document.getElementById('catchStartBtn').disabled = true;
+
+      // 1초마다 남은 시간 줄이기
+      var tick = setInterval(function () {
+        catchState.timeLeft -= 1;
+        document.getElementById('catchTime').textContent = catchState.timeLeft;
+        if (catchState.timeLeft <= 0) {
+          clearInterval(tick);
+          endCatch();
+        }
+      }, 1000);
+      catchState.timers.push(tick);
+
+      // 일정 간격으로 나사를 계속 떨어뜨리기 (0.45초마다 한 개)
+      var spawn = setInterval(function () { dropOneScrew(); }, 450);
+      catchState.timers.push(spawn);
+      dropOneScrew(); // 시작하자마자 한 개
+    }
+
+    // 나사 한 개를 놀이판 맨 위에서 떨어뜨리기
+    function dropOneScrew() {
+      if (!catchState.running) return;
+      var field = document.getElementById('catchField');
+      var item = document.createElement('div');
+      // 가끔(20%) 별나사(5개), 나머지는 보통 나사(1개)
+      var isGold = Math.random() < 0.2;
+      item.className = 'falling' + (isGold ? ' gold' : '');
+      item.textContent = isGold ? '🌟' : '🔩';
+      item.dataset.value = isGold ? 5 : 1;
+      // 위치를 비율(%)로 정하면 화면 크기가 바뀌어도 가장자리에 안 걸침
+      item.style.left = (Math.random() * 86) + '%';
+      // 떨어지는 빠르기 (별나사는 조금 빨라서 받기 어려움)
+      var fallMs = isGold ? 1700 : (1900 + Math.random() * 700);
+      item.style.transition = 'top ' + fallMs + 'ms linear';
+      // 톡 누르면 받기! (누르는 순간 바로 잡히게 pointerdown 사용 — 움직여도 한 번에 먹힘)
+      item.addEventListener('pointerdown', function (e) { e.preventDefault(); catchScrew(item); });
+      field.appendChild(item);
+      // 살짝 뒤에 아래로 떨어지게 (transition이 먹도록)
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { item.style.top = (field.clientHeight + 10) + 'px'; });
+      });
+      // 다 떨어지면(못 받으면) 그냥 사라짐
+      var rm = setTimeout(function () { if (item.parentNode) item.parentNode.removeChild(item); }, fallMs + 100);
+      catchState.timers.push(rm);
+    }
+
+    // 나사를 톡 받았을 때
+    function catchScrew(item) {
+      if (!catchState.running || !item.parentNode) return;
+      var val = parseInt(item.dataset.value, 10) || 1;
+      catchState.score += val;
+      game.screws += val;                          // 받은 나사는 바로 공장 나사로!
+      document.getElementById('catchScore').textContent = catchState.score;
+      var field = item.parentNode;
+      // 받은 자리(지금 나사가 실제로 보이는 위치)에 +숫자 잠깐 띄우기
+      var fieldRect = field.getBoundingClientRect();
+      var itemRect = item.getBoundingClientRect();
+      var pop = document.createElement('div');
+      pop.className = 'pop';
+      pop.textContent = '+' + val;
+      pop.style.left = (itemRect.left - fieldRect.left) + 'px';
+      pop.style.top  = (itemRect.top - fieldRect.top) + 'px';
+      field.appendChild(pop);
+      setTimeout(function () { if (pop.parentNode) pop.parentNode.removeChild(pop); }, 600);
+      field.removeChild(item);                      // 받은 나사는 사라짐
+      document.querySelectorAll('.screw-num').forEach(function (el) { el.textContent = game.screws; });
+      save();                                        // 받을 때마다 바로 저장 (도중에 닫아도 안 사라짐)
+    }
+
+    // 시간이 다 됐을 때 끝내기
+    function endCatch() {
+      catchState.running = false;
+      catchState.timers.forEach(function (t) { clearTimeout(t); clearInterval(t); });
+      catchState.timers = [];
+      document.getElementById('catchField').innerHTML = '';
+      document.getElementById('catchStartBtn').disabled = false;
+      document.getElementById('catchStartBtn').textContent = '▶ 한 번 더!';
+      document.getElementById('catchResult').textContent =
+        '⏰ 끝! 나사 ' + catchState.score + '개를 받았어요! 🎉';
+      save();   // 늘어난 나사 저장
+      render(); // 다른 화면들 숫자도 갱신
+    }
+
+    // 게임 도중에 공장으로 돌아가면 깔끔히 멈추기
+    function leaveCatch() {
+      if (catchState.running) endCatch();
+      showScreen('main');
+    }
+
+    // 게임 저장 / 처음부터 다시
+    function save() { try { localStorage.setItem('car_factory_clicker', JSON.stringify(game)); } catch (e) {} }
+    function resetGame() {
+      if (confirm('정말 처음부터 다시 시작할까요? 모은 나사·자동차가 모두 사라져요!')) {
+        localStorage.removeItem('car_factory_clicker');
+        location.reload();
+      }
+    }
+
+    // 액션 버튼 상태: 가장 중요하면 초록 강조(ready), 자원 부족하면 흐림(cant)
+    function updateAction(id, isTop, canDo) {
+      var el = document.getElementById(id);
+      el.classList.toggle('ready', isTop);
+      el.classList.toggle('cant', !canDo && !isTop);
+    }
+
+    // 화면 그리기 — 자원, 진행률, 액션 정보를 모두 갱신
+    function render() {
+      // 중간: 자원
+      document.querySelectorAll('.screw-num').forEach(function (el) { el.textContent = game.screws; });
+      document.querySelectorAll('.part-num').forEach(function (el) { el.textContent = game.parts; });
+      document.querySelectorAll('.pps').forEach(function (el) { el.textContent = game.robots; });
+      document.querySelector('.per-click').textContent = game.perClick;
+      document.getElementById('driverCost').textContent = game.driverCost;
+      document.getElementById('robotCost').textContent = game.robotCost;
+
+      // 상단: 지금 만드는 차 + 진행률
+      var stage = game.carStage;
+      document.getElementById('carImage').src = CAR_IMAGES[Math.min(stage, 3)];
+      var carNow = document.getElementById('carNow');
+      var bar = document.getElementById('progressBar');
+      var ptext = document.getElementById('progressText');
+      var buildInfo = document.getElementById('buildInfo');
+      var actBuild = document.getElementById('actBuild');
+      var clearMsg = document.getElementById('clearMessage');
+
+      if (stage >= 4) {
+        // 슈퍼카까지 다 완성
+        carNow.textContent = '🎉 슈퍼카까지 다 완성!';
+        bar.style.width = '100%';
+        ptext.textContent = '모두 완성! 🏆';
+        buildInfo.textContent = '완성!';
+        actBuild.disabled = true;
+        clearMsg.style.display = 'block';
+      } else {
+        var name = CAR_NAMES[stage];
+        var need = carPartCost(stage);
+        var have = Math.min(game.parts, need);
+        var pct = Math.floor(game.parts / need * 100);
+        if (pct > 100) pct = 100;
+        carNow.textContent = '🚗 ' + name + ' 만드는 중';
+        bar.style.width = pct + '%';
+        ptext.textContent = '부품 ' + have + '/' + need + '개 (' + pct + '%)';
+        actBuild.disabled = false;
+        clearMsg.style.display = 'none';
+      }
+
+      // 지금 할 '가장 중요한 액션' 하나 결정 (위에서부터 할 수 있는 첫 번째)
+      var top = null;
+      if (stage < 4) {
+        if (game.parts >= carPartCost(stage)) top = 'actBuild';      // 1순위: 조립
+        else if (game.screws >= PART_COST) top = 'actPart';          // 2순위: 부품 만들기
+        else top = 'actScrew';                                       // 3순위: 나사 모으기
+      }
+      // 조립 버튼 안내 문구 (강조될 때만 "지금 조립!")
+      if (stage < 4) {
+        buildInfo.textContent = (top === 'actBuild') ? '✨ 지금 조립!' : '부품 ' + carPartCost(stage) + '개';
+      }
+      // 각 액션: 가장 중요하면 초록 강조, 자원 부족하면 흐림
+      updateAction('actBuild',  top === 'actBuild',  stage < 4 && game.parts >= carPartCost(stage));
+      updateAction('actPart',   top === 'actPart',   game.screws >= PART_COST);
+      updateAction('actScrew',  top === 'actScrew',  true);
+      updateAction('actRobot',  false,               game.screws >= game.robotCost);
+      updateAction('actDriver', false,               game.screws >= game.driverCost);
+
+      // 슈퍼카까지 다 완성하면(stage 4) 레이싱 들어가기 버튼 보이기
+      document.getElementById('raceEntry').style.display = (stage >= 4) ? 'block' : 'none';
+
+      // 레이싱 화면이 열려 있으면 거기 정보(나사·속도 막대)도 같이 갱신
+      if (document.getElementById('race').style.display === 'block') renderRace();
+
+      save(); // 바뀐 내용을 자동 저장
+    }
+
+    // 1초마다: (1) 게임 시작 후면 플레이 시간 +1 (2) 자동 로봇 나사 모으기
+    setInterval(function () {
+      // 🏆 인트로(시작 전) 화면이 아니면 = 게임 중이면 플레이 시간 1초 증가
+      if (document.getElementById('intro').style.display === 'none') {
+        game.playSeconds += 1;
+      }
+      if (game.robots > 0) game.screws += game.robots; // 자동 로봇이 모으는 나사
+      render();
+    }, 1000); // 1000밀리초 = 1초
+
+    // 저장된 게임 불러오기 (전에 하던 게 있으면 이어서)
+    var saved = localStorage.getItem('car_factory_clicker');
+    if (saved) {
+      try {
+        var data = JSON.parse(saved);
+        for (var key in data) { if (game.hasOwnProperty(key)) game[key] = data[key]; }
+      } catch (e) {}
+    }
+
+    // 🏆 전에 적은 이름이 있으면 입력칸에 미리 채워두기
+    if (game.playerName) {
+      document.getElementById('nameInput').value = game.playerName;
+    }
+
+    showScreen('intro'); // 시작은 인트로 화면부터
+    render();            // 처음 화면 그리기
+  </script>
+</body>
+</html>
