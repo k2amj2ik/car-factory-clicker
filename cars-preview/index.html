@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>자동차 그림 고르기</title>
+  <style>
+    body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: linear-gradient(160deg, #fff3e0 0%, #ffccbc 100%); margin: 0; padding: 18px 14px 40px; color: #4e342e; }
+    h1 { text-align: center; color: #c62828; font-size: 22px; }
+    h2 { color: #6d4c41; font-size: 17px; margin: 24px 6px 8px; }
+    p.note { text-align: center; color: #6d4c41; font-size: 14px; line-height: 1.5; }
+    .grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .card { background: #fff; border-radius: 16px; padding: 12px; width: 150px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1); text-align: center; }
+    .card img { width: 120px; height: 120px; }
+    .stage { font-size: 13px; color: #e65100; font-weight: bold; }
+    .label { font-weight: bold; font-size: 16px; margin-top: 4px; }
+    .arrow { text-align: center; font-size: 28px; color: #ff8a65; margin: 4px 0; }
+    .rec { border: 3px solid #43a047; }
+  </style>
+</head>
+<body>
+  <h1>🚗 자동차 그림 고르기</h1>
+  <p class="note">엄마가 무료 그림(OpenMoji)으로 자동차를 바꿔요.<br>아래가 <b>추천 4단계</b>예요. 마음에 들면 "이대로!",<br>바꾸고 싶으면 아래 "다른 후보"에서 골라서 말해줘요.</p>
+
+  <h2>✨ 추천 — 이렇게 변신해요</h2>
+  <div class="grid">
+    <div class="card rec"><div class="stage">1단계</div><img src="suv_1F699.svg"><div class="label">🧸 장난감차</div></div>
+    <div class="card rec"><div class="stage">2단계</div><img src="automobile_1F697.svg"><div class="label">🚗 자동차</div></div>
+    <div class="card rec"><div class="stage">3단계</div><img src="racingcar_1F3CE.svg"><div class="label">🏎️ 스포츠카</div></div>
+    <div class="card rec"><div class="stage">4단계</div><img src="supercar_gold.svg"><div class="label">🦸 슈퍼카(황금)</div></div>
+  </div>
+
+  <h2>🔄 다른 후보 (바꾸고 싶을 때)</h2>
+  <div class="grid">
+    <div class="card"><img src="minibus_1F690.svg"><div class="label">미니버스</div></div>
+    <div class="card"><img src="taxi_1F695.svg"><div class="label">택시</div></div>
+    <div class="card"><img src="truck_1F69A.svg"><div class="label">트럭</div></div>
+    <div class="card"><img src="racingcar_1F3CE.svg"><div class="label">빨간 F1</div></div>
+  </div>
+
+  <p class="note" style="margin-top:28px;">고른 다음 채팅창에 알려줘요!<br>예: "추천대로 해줘" / "장난감차를 택시로 바꿔줘"</p>
+</body>
+</html>
