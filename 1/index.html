@@ -26,6 +26,8 @@
     .start-btn { font-size: clamp(19px, 5.5vw, 24px); background: #e53935; color: #fff; border-radius: 20px; padding: 16px 40px; margin-top: 24px; }
     .start-btn:active { transform: scale(0.95); }
     .reset-btn { margin-top: 30px; background: none; color: #b0a89f; font-size: 14px; text-decoration: underline; }
+    .credit { margin-top: 22px; font-size: 11px; color: #bcaFA0; }
+    .credit a { color: #a1887f; }
 
     /* 상단: 지금 만드는 차 + 진행률 */
     .car-now { font-size: clamp(16px, 5vw, 20px); color: #c62828; font-weight: bold; margin: 4px 0; }
@@ -197,6 +199,7 @@
       <input id="nameInput" maxlength="12" placeholder="이름을 적어요 (예: 친구)" class="name-input" />
       <button class="start-btn" onclick="startGame()">▶ 시작하기</button>
       <div><button class="reset-btn" onclick="resetGame()">처음부터 다시</button></div>
+      <div class="credit">자동차 그림: <a href="https://openmoji.org" target="_blank" rel="noopener">OpenMoji</a> (CC BY-SA 4.0)</div>
     </div>
 
     <!-- 메인 화면 -->
@@ -211,7 +214,7 @@
       <div class="car-now" id="carNow">🚗 장난감차 만드는 중</div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
       <div class="progress-text" id="progressText">부품 0/15개 (0%)</div>
-      <img id="carImage" class="car-image" src="images/toy.jpg" alt="지금 만드는 자동차" onclick="clickScrew(event)">
+      <img id="carImage" class="car-image" src="images/toy.svg" alt="지금 만드는 자동차" onclick="clickScrew(event)">
       <div class="tap-hint">👆 자동차를 톡톡 누르면 나사가 모여요!</div>
       <div class="clear-message" id="clearMessage">🎉 축하해요! 슈퍼카 완성! 🏁<br>다음은 레이싱이에요!</div>
 
@@ -346,7 +349,7 @@
 
     const PART_COST = 70; // 부품 1개 = 나사 70개
     const CAR_NAMES = ['장난감차', '자동차', '스포츠카', '슈퍼카'];
-    const CAR_IMAGES = ['images/toy.jpg', 'images/normal.jpg', 'images/sports.png', 'images/super.png'];
+    const CAR_IMAGES = ['images/toy.svg', 'images/normal.svg', 'images/sports.svg', 'images/super.svg'];
     // 각 자동차에 필요한 부품 수: 🧸15 · 🚗40 · 🏎️70 · 🦸100
     const CAR_COSTS = [15, 40, 70, 100];
     function carPartCost(stage) { return CAR_COSTS[stage]; }
