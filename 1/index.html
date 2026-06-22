@@ -62,7 +62,7 @@
       50% { box-shadow: 0 0 0 9px rgba(67, 160, 71, 0); }
     }
 
-    /* 🏁 드래그 레이싱 들어가기 버튼 (슈퍼카 완성 후 메인 맨 위에 등장) */
+    /* 🏁 자동차 경주 들어가기 버튼 (슈퍼카 완성 후 메인 맨 위에 등장) */
     .race-entry { display: none; width: 100%; font-size: clamp(17px, 5vw, 21px); font-weight: bold;
       background: linear-gradient(135deg, #ab47bc, #5e35b1); color: #fff; border-radius: 16px;
       padding: 15px; margin: 4px 0 12px; box-shadow: 0 4px 14px rgba(94, 53, 177, 0.35);
@@ -208,8 +208,8 @@
       <button class="rank-entry" onclick="openRanking(Math.min(game.carStage, 3))">🏆 랭킹 보기 (누가 제일 빨리?)</button>
       <!-- 보너스 게임: 나사 비 받기 (항상 보임) -->
       <button class="catch-entry" onclick="showScreen('catch')">🔩 나사 비 받기 게임 ☔ (보너스 나사!)</button>
-      <!-- 슈퍼카 완성 후 등장: 드래그 레이싱 들어가기 -->
-      <button class="race-entry" id="raceEntry" onclick="showScreen('race')">🏁 드래그 레이싱 하러 가기 🏎️💨</button>
+      <!-- 슈퍼카 완성 후 등장: 자동차 경주 들어가기 -->
+      <button class="race-entry" id="raceEntry" onclick="showScreen('race')">🏁 자동차 경주 하러 가기 🏎️💨</button>
       <!-- 상단: 지금 만드는 차 + 진행률 -->
       <div class="car-now" id="carNow">🚗 장난감차 만드는 중</div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
@@ -246,9 +246,9 @@
       </button>
     </div>
 
-    <!-- 🏁 드래그 레이싱 화면 -->
+    <!-- 🏁 자동차 경주 화면 -->
     <div id="race">
-      <h1>🏁 드래그 레이싱 🏎️</h1>
+      <h1>🏁 자동차 경주 🏎️</h1>
 
       <!-- 신호등 -->
       <div class="signal" id="signal">🔴 ⚪ ⚪</div>
@@ -494,7 +494,7 @@
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    // ===== 🏁 드래그 레이싱 =====
+    // ===== 🏁 자동차 경주 =====
     // 레이싱이 지금 달리는 중인지, 두 차의 위치(0~100)를 적어두는 메모지
     var raceState = { running: false, playerPos: 0, compPos: 0, token: 0 };
 
