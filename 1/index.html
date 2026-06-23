@@ -16,7 +16,18 @@
       touch-action: manipulation; /* 빠르게 톡톡 눌러도 더블탭 확대 안 됨 */
       -webkit-text-size-adjust: 100%; /* 사파리 자동 글자 확대 방지 */
     }
-    #app { max-width: 480px; min-height: 100vh; margin: 0 auto; padding: 20px 16px 36px; text-align: center; }
+    #app { max-width: 480px; min-height: 100vh; margin: 0 auto; padding: 20px 16px 84px; text-align: center; }
+
+    /* 화면 맨 아래 메뉴 막대 (공장·차고·대회·순위) */
+    .menu-bar { position: fixed; left: 0; right: 0; bottom: 0; max-width: 480px; margin: 0 auto;
+      display: flex; background: #fff; border-top: 2px solid #ffab91;
+      box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.1); z-index: 500; }
+    .menu-item { flex: 1; background: none; border: none; cursor: pointer; padding: 8px 2px 10px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      color: #b0a89f; font-family: inherit; font-size: 12px; font-weight: bold; }
+    .menu-item .menu-icon { font-size: 23px; line-height: 1; }
+    .menu-item.on { color: #e53935; }
+    .menu-item:active { transform: scale(0.9); }
     h1 { font-size: clamp(20px, 6vw, 28px); color: #c62828; margin: 10px 0; }
 
     /* 인트로(시작) 화면 */
@@ -75,6 +86,7 @@
 
     /* 🏁 레이싱 화면 */
     #race { display: none; }
+    #garage { display: none; }
     #race h1 { color: #5e35b1; }
     .signal { font-size: clamp(26px, 8vw, 36px); letter-spacing: 6px; margin: 6px 0 4px;
       min-height: 44px; font-weight: bold; }
@@ -204,19 +216,15 @@
 
     <!-- 메인 화면 -->
     <div id="main">
-      <!-- 🏆 랭킹 보기 (항상 보임) -->
-      <button class="rank-entry" onclick="openRanking(Math.min(game.carStage, 3))">🏆 랭킹 보기 (누가 제일 빨리?)</button>
-      <!-- 보너스 게임: 나사 비 받기 (항상 보임) -->
+      <!-- 보너스 게임: 나사 비 받기 (항상 보임). 순위·대회는 아래 메뉴 막대로 이동 -->
       <button class="catch-entry" onclick="showScreen('catch')">🔩 나사 비 받기 게임 ☔ (보너스 나사!)</button>
-      <!-- 슈퍼카 완성 후 등장: 자동차 경주 들어가기 -->
-      <button class="race-entry" id="raceEntry" onclick="showScreen('race')">🏁 자동차 경주 하러 가기 🏎️💨</button>
       <!-- 상단: 지금 만드는 차 + 진행률 -->
       <div class="car-now" id="carNow">🚗 장난감차 만드는 중</div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressBar"></div></div>
       <div class="progress-text" id="progressText">부품 0/15개 (0%)</div>
       <img id="carImage" class="car-image" src="images/toy.svg" alt="지금 만드는 자동차" onclick="clickScrew(event)">
       <div class="tap-hint">👆 자동차를 톡톡 누르면 나사가 모여요!</div>
-      <div class="clear-message" id="clearMessage">🎉 축하해요! 슈퍼카 완성! 🏁<br>다음은 레이싱이에요!</div>
+      <div class="clear-message" id="clearMessage">🎉 축하해요! 슈퍼카 완성! 🏁<br>아래 🏁 대회 메뉴에서 경주해요!</div>
 
       <!-- 중간: 내가 모은 것 -->
       <div class="resource-area">
@@ -312,7 +320,7 @@
 
     <!-- 🏆 랭킹 화면 -->
     <div id="ranking">
-      <h1>🏆 스피드런 랭킹</h1>
+      <h1>🏆 빨리 만들기 순위</h1>
       <p style="color:#6d4c41; font-size:clamp(13px,4vw,15px); margin:2px 0 6px;">누가 자동차를 제일 빨리 만들었나?</p>
       <div class="rank-tabs">
         <button class="rank-tab" id="rankTab0" onclick="openRanking(0)">🧸 장난감차</button>
@@ -323,6 +331,21 @@
       <div class="rank-list" id="rankList">불러오는 중...</div>
       <div><button class="back-btn" onclick="showScreen('main')">← 공장으로 돌아가기</button></div>
     </div>
+
+    <!-- 🚙 차고 화면 (다음 단계에서 자동차를 채워요) -->
+    <div id="garage">
+      <h1>🚙 차고</h1>
+      <p style="color:#6d4c41; font-size:clamp(14px,4.2vw,16px); line-height:1.6;">
+        여기에 내가 만든 자동차가 모여요.<br>곧 자동차들이 들어올 거예요! 🚗</p>
+    </div>
+
+    <!-- 화면 맨 아래 메뉴 막대 -->
+    <nav class="menu-bar" id="menuBar" style="display:none;">
+      <button class="menu-item" id="menuFactory" onclick="showScreen('main')"><span class="menu-icon">🏭</span>공장</button>
+      <button class="menu-item" id="menuGarage" onclick="showScreen('garage')"><span class="menu-icon">🚙</span>차고</button>
+      <button class="menu-item" id="menuRace" onclick="showScreen('race')"><span class="menu-icon">🏁</span>대회</button>
+      <button class="menu-item" id="menuRanking" onclick="openRanking(Math.min(game.carStage, 3))"><span class="menu-icon">🏆</span>순위</button>
+    </nav>
 
   </div><!-- #app -->
 
@@ -363,15 +386,27 @@
       save();
     }
 
-    // 화면 전환: intro(시작) / main(게임) / race(레이싱) / catch(나사비) / ranking(랭킹)
+    // 화면 전환: intro(시작) / main(공장) / garage(차고) / race(대회) / catch(나사비) / ranking(순위)
     function showScreen(name) {
       document.getElementById('intro').style.display   = (name === 'intro')   ? 'block' : 'none';
       document.getElementById('main').style.display    = (name === 'main')    ? 'block' : 'none';
+      document.getElementById('garage').style.display  = (name === 'garage')  ? 'block' : 'none';
       document.getElementById('race').style.display    = (name === 'race')    ? 'block' : 'none';
       document.getElementById('catch').style.display   = (name === 'catch')   ? 'block' : 'none';
       document.getElementById('ranking').style.display = (name === 'ranking') ? 'block' : 'none';
-      if (name === 'race') renderRace(); // 레이싱 화면 들어가면 속도 막대 등 그리기
+      // 메뉴 막대: 시작 화면(intro)에선 숨기고, 게임 중엔 보이기 + 현재 메뉴 강조
+      document.getElementById('menuBar').style.display = (name === 'intro') ? 'none' : 'flex';
+      setMenuActive(name);
+      if (name === 'race') renderRace(); // 대회 화면 들어가면 속도 막대 등 그리기
       if (name === 'catch') render();    // 나사 비 화면 들어가면 가진 나사 숫자 갱신
+    }
+
+    // 메뉴 4개 중 지금 화면을 강조 (나사비는 공장 메뉴로 묶음)
+    function setMenuActive(name) {
+      var map = { main: 'menuFactory', catch: 'menuFactory', garage: 'menuGarage', race: 'menuRace', ranking: 'menuRanking' };
+      ['menuFactory', 'menuGarage', 'menuRace', 'menuRanking'].forEach(function (id) {
+        document.getElementById(id).classList.toggle('on', map[name] === id);
+      });
     }
 
     // 🔩 나사 모으기 (자동차 그림 탭 또는 '나사 모으기' 버튼)
@@ -485,7 +520,7 @@
               '</span><span class="when">' + fmtTime(r.play_seconds) + '</span></div>';
           }).join('');
       } catch (e) {
-        box.textContent = '랭킹을 못 불러왔어요(인터넷 확인). 잠시 후 다시!';
+        box.textContent = '순위를 못 불러왔어요(인터넷 확인). 잠시 후 다시!';
       }
     }
 
@@ -794,10 +829,9 @@
       updateAction('actRobot',  false,               game.screws >= game.robotCost);
       updateAction('actDriver', false,               game.screws >= game.driverCost);
 
-      // 슈퍼카까지 다 완성하면(stage 4) 레이싱 들어가기 버튼 보이기
-      document.getElementById('raceEntry').style.display = (stage >= 4) ? 'block' : 'none';
+      // 대회는 아래 메뉴 막대로 언제든 들어갈 수 있음 (옛 '경주 들어가기' 버튼 제거)
 
-      // 레이싱 화면이 열려 있으면 거기 정보(나사·속도 막대)도 같이 갱신
+      // 대회 화면이 열려 있으면 거기 정보(나사·속도 막대)도 같이 갱신
       if (document.getElementById('race').style.display === 'block') renderRace();
 
       save(); // 바뀐 내용을 자동 저장
