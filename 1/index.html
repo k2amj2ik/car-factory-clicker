@@ -104,6 +104,17 @@
     .gc-speed { font-size: 16px; letter-spacing: 1px; }
     .gc-state { font-size: 13px; font-weight: bold; color: #e65100; }
     .garage-car.selected .gc-state { color: #2e7d32; }
+
+    /* 🏁 대회 — 구불구불 서킷 */
+    .race-car-pick { font-weight: bold; color: #5e35b1; font-size: clamp(15px, 4.6vw, 18px); margin: 4px 0 8px; }
+    .circuit-wrap { width: 100%; max-width: 340px; margin: 6px auto; }
+    .circuit-svg { width: 100%; height: auto; display: block; background: #c8e6c9; border-radius: 18px;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.12); }
+    .race-time { font-size: clamp(17px, 5.2vw, 22px); font-weight: bold; color: #e65100; margin: 8px 0; }
+    .tap-zone { width: 100%; font-size: clamp(19px, 5.6vw, 24px); font-weight: bold;
+      background: #43a047; color: #fff; border: none; border-radius: 16px; padding: 22px; margin: 8px 0;
+      cursor: pointer; user-select: none; touch-action: manipulation; animation: pulse 1.1s infinite; }
+    .tap-zone:active { transform: scale(0.96); background: #2e7d32; }
     #race h1 { color: #5e35b1; }
     .signal { font-size: clamp(26px, 8vw, 36px); letter-spacing: 6px; margin: 6px 0 4px;
       min-height: 44px; font-weight: bold; }
@@ -272,49 +283,35 @@
       </button>
     </div>
 
-    <!-- 🏁 자동차 경주 화면 -->
+    <!-- 🏁 자동차 경주(대회) 화면 - 구불구불 서킷 -->
     <div id="race">
       <h1>🏁 자동차 경주 🏎️</h1>
+      <div class="race-car-pick" id="raceCarPick">차고에서 차를 골라요!</div>
 
-      <!-- 신호등 -->
-      <div class="signal" id="signal">🔴 ⚪ ⚪</div>
-
-      <!-- 경주로: 위=내 차, 아래=컴퓨터 차 -->
-      <div class="track">
-        <div class="lane">
-          <span class="lane-label">내 차</span>
-          <div class="lane-road"><span class="race-car" id="playerCar">🏎️</span></div>
-          <span class="finish-flag">🏁</span>
-        </div>
-        <div class="lane">
-          <span class="lane-label">컴퓨터</span>
-          <div class="lane-road"><span class="race-car" id="compCar">🚗</span></div>
-          <span class="finish-flag">🏁</span>
-        </div>
+      <!-- 구불구불 S자 서킷 -->
+      <div class="circuit-wrap">
+        <svg class="circuit-svg" viewBox="0 0 300 180" preserveAspectRatio="xMidYMid meet">
+          <!-- 길(트랙) -->
+          <path id="trackPath" d="M 20 90 C 50 20 95 20 110 90 C 125 160 170 160 190 90 C 210 20 255 20 280 90"
+                fill="none" stroke="#546e7a" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- 가운데 점선 -->
+          <path d="M 20 90 C 50 20 95 20 110 90 C 125 160 170 160 190 90 C 210 20 255 20 280 90"
+                fill="none" stroke="#cfd8dc" stroke-width="2.5" stroke-dasharray="7 9"/>
+          <!-- 출발/결승 표시 -->
+          <text x="20" y="78" font-size="20" text-anchor="middle">🟢</text>
+          <text x="280" y="78" font-size="20" text-anchor="middle">🏁</text>
+          <!-- 내 차 (달릴 때 길 따라 움직임) -->
+          <image id="raceCarMarker" width="32" height="32" />
+        </svg>
       </div>
 
-      <!-- 결과 메시지 -->
+      <div class="race-time" id="raceTime">시간: 0.0초</div>
       <div class="race-result" id="raceResult"></div>
 
-      <!-- 내 속도 막대 -->
-      <div class="resource-area" style="text-align:left;">
-        <div style="margin-bottom:6px;">⚡ 내 속도 (Lv.<span id="engineLv">0</span>)</div>
-        <div class="progress-bar-bg" style="max-width:none; margin:0;">
-          <div class="progress-bar-fill" id="speedBar" style="background:linear-gradient(90deg,#7e57c2,#5e35b1);"></div>
-        </div>
-      </div>
-
-      <!-- 엔진 업그레이드 (나사로 속도 올리기) -->
-      <button class="engine-btn" id="engineBtn" onclick="buyEngine()">
-        <span>⚡ 엔진 업그레이드</span>
-        <span>나사 <span id="engineCost">100</span>개</span>
-      </button>
-
-      <!-- 지금 가진 나사 -->
-      <div class="resource-area">🔩 나사: <span class="screw-num">0</span>개</div>
-
-      <!-- 출발 / 돌아가기 -->
+      <!-- 출발 버튼 / 달릴 때 탭 영역 -->
       <button class="race-go-btn" id="raceGoBtn" onclick="startRace()">🏁 출발!</button>
+      <button class="tap-zone" id="tapZone" style="display:none;" onpointerdown="tapBoost()">👆 탑탑 눌러 가속! 💨</button>
+
       <div><button class="back-btn" onclick="leaveRace()">← 공장으로 돌아가기</button></div>
     </div>
 
@@ -384,6 +381,7 @@
       playSeconds: 0, // 🏆 게임 시작 후 흐른 시간(초)
       reported: {},   // 🏆 서버에 이미 보낸 등급 표시 {0:true,...}
       selectedCar: 0, // 🚙 대회에 나갈 차고 차 (등급 0~3)
+      lastRaceTime: 0,// 🏁 마지막 대회 완주 시간(초)
     };
 
     // 🏆 랭킹 서버 주소 (점수를 보내고 순위를 받아오는 곳)
@@ -592,124 +590,95 @@
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    // ===== 🏁 자동차 경주 =====
-    // 레이싱이 지금 달리는 중인지, 두 차의 위치(0~100)를 적어두는 메모지
-    var raceState = { running: false, playerPos: 0, compPos: 0, token: 0 };
+    // ===== 🏁 자동차 경주(대회) — 구불구불 서킷 =====
+    // 달리는 중인지, 진행도(0~1), 부스트(탭 가속), 시작시각, 회차 번호
+    var raceState = { running: false, progress: 0, boost: 0, startTime: 0, token: 0 };
 
-    // ⚡ 엔진 업그레이드 — 나사로 속도 단계를 +1 (값은 1.5배씩 오름)
-    function buyEngine() {
-      if (raceState.running) return;            // 달리는 중엔 못 삼
-      if (game.screws < game.engineCost) return; // 나사 부족하면 아무 일 없음
-      game.screws -= game.engineCost;
-      game.engineLevel += 1;
-      game.engineCost = Math.floor(game.engineCost * 1.5);
-      render();      // 나사 숫자 갱신
-      renderRace();  // 속도 막대·엔진 값 갱신
+    // 차를 서킷 길(0~1 비율) 위에 올려놓기 + 길 방향으로 회전
+    function placeCarAt(progress) {
+      var path = document.getElementById('trackPath');
+      var len = path.getTotalLength();
+      var p = path.getPointAtLength(progress * len);
+      var p2 = path.getPointAtLength(Math.min(progress + 0.01, 1) * len);
+      var angle = Math.atan2(p2.y - p.y, p2.x - p.x) * 180 / Math.PI; // 진행 방향 각도
+      var m = document.getElementById('raceCarMarker');
+      m.setAttribute('x', p.x - 16);
+      m.setAttribute('y', p.y - 16);
+      m.setAttribute('transform', 'rotate(' + angle + ' ' + p.x + ' ' + p.y + ')');
     }
 
-    // 레이싱 화면 그리기 — 속도 막대, 엔진 값, 나사
+    // 대회 화면 그리기 — 고른 차 보여주고 출발점에 놓기 (달리는 중엔 안 건드림)
     function renderRace() {
-      document.getElementById('engineLv').textContent = game.engineLevel;
-      document.getElementById('engineCost').textContent = game.engineCost;
-      // 속도 막대: 엔진 단계가 높을수록 길어짐 (최대 100%)
-      var pct = Math.min(100, 12 + game.engineLevel * 11);
-      document.getElementById('speedBar').style.width = pct + '%';
-      // 나사 부족하면 엔진 버튼 흐리게
-      var eb = document.getElementById('engineBtn');
-      eb.classList.toggle('cant', game.screws < game.engineCost);
+      var car = game.selectedCar;
+      if (game.carStage === 0) { // 아직 만든 차가 없으면
+        document.getElementById('raceCarPick').textContent = '먼저 공장에서 자동차를 만들어요!';
+      } else {
+        document.getElementById('raceCarPick').textContent = '🚗 ' + CAR_NAMES[car] + '로 달려요! (' + '⚡'.repeat(car + 1) + ')';
+      }
+      document.getElementById('raceCarMarker').setAttributeNS('http://www.w3.org/1999/xlink', 'href', CAR_IMAGES[car]);
+      document.getElementById('raceCarMarker').setAttribute('href', CAR_IMAGES[car]);
+      if (!raceState.running) placeCarAt(0);
     }
 
-    // 두 차를 경주로 위에 그리기 (위치 0~100 → 왼쪽 0~90%)
-    function updateCarPositions() {
-      document.getElementById('playerCar').style.left = (raceState.playerPos * 0.9) + '%';
-      document.getElementById('compCar').style.left   = (raceState.compPos * 0.9) + '%';
-    }
-
-    // 🏁 출발! — 신호등 3,2,1 → 초록불 → 자동으로 달리기 시작
+    // 🏁 출발!
     function startRace() {
       if (raceState.running) return;
+      if (game.carStage === 0) { alert('먼저 공장에서 자동차를 만들어요!'); return; }
       raceState.running = true;
-      raceState.token = (raceState.token || 0) + 1; // 이번 경주의 회차 번호
+      raceState.token += 1;
       var myToken = raceState.token;
-      raceState.playerPos = 0;
-      raceState.compPos = 0;
-      updateCarPositions();
+      raceState.progress = 0;
+      raceState.boost = 0;
+      raceState.startTime = performance.now();
       var result = document.getElementById('raceResult');
-      result.textContent = '';
-      result.className = 'race-result';
-      document.getElementById('raceGoBtn').disabled = true;
-      document.getElementById('engineBtn').disabled = true;
-
-      var sig = document.getElementById('signal');
-      sig.innerHTML = '🔴 ⚪ ⚪';
-      setTimeout(function () { sig.innerHTML = '🔴 🔴 ⚪'; }, 600);
-      setTimeout(function () { sig.innerHTML = '🔴 🔴 🔴'; }, 1200);
-      setTimeout(function () {
-        // 그새 돌아가기를 눌렀으면(회차 번호가 바뀌었으면) 출발 안 함
-        if (!raceState.running || raceState.token !== myToken) return;
-        sig.innerHTML = '<span class="go">🟢 출발!</span>';
-        beginRun(myToken);
-      }, 1800);
-    }
-
-    // 초록불 이후 실제 달리기 (부드럽게 움직임)
-    function beginRun(myToken) {
-      // 내 차 속도: 엔진 단계가 높을수록 빠름 / 컴퓨터: 정해진 속도 + 조금 들쭉날쭉
-      // Lv 0에서도 가끔 이길 수 있고, 엔진을 올릴수록 확실히 빨라짐
-      var playerSpeed = 24 + game.engineLevel * 4; // 1초에 가는 양
-      var compSpeed   = 22 + Math.random() * 5;
+      result.textContent = ''; result.className = 'race-result';
+      document.getElementById('raceGoBtn').style.display = 'none';
+      document.getElementById('tapZone').style.display = 'block';
       var last = null;
       function frame(now) {
-        // 경주가 멈췄거나(돌아가기) 다른 회차가 시작됐으면 이 달리기는 끝
         if (!raceState.running || raceState.token !== myToken) return;
         if (last === null) last = now;
-        var dt = (now - last) / 1000; // 지난 시간(초)
-        last = now;
-        raceState.playerPos += playerSpeed * dt;
-        raceState.compPos   += compSpeed * dt;
-        var finished = (raceState.playerPos >= 100 || raceState.compPos >= 100);
-        if (finished) {
-          raceState.playerPos = Math.min(raceState.playerPos, 100);
-          raceState.compPos   = Math.min(raceState.compPos, 100);
-        }
-        updateCarPositions();
-        if (finished) {
-          finishRace(raceState.playerPos >= raceState.compPos);
-        } else {
-          requestAnimationFrame(frame);
-        }
+        var dt = (now - last) / 1000; last = now;
+        var base = CAR_SPEEDS[game.selectedCar] * 0.011; // 차 기본 속도 (가만 둬도 천천히 감)
+        raceState.progress += (base + raceState.boost) * dt;
+        raceState.boost *= Math.pow(0.15, dt);           // 부스트는 탭 안 하면 빠르게 줄어듦
+        if (raceState.progress >= 1) { raceState.progress = 1; placeCarAt(1); finishRace(); return; }
+        placeCarAt(raceState.progress);
+        document.getElementById('raceTime').textContent = '시간: ' + ((now - raceState.startTime) / 1000).toFixed(1) + '초';
+        requestAnimationFrame(frame);
       }
       requestAnimationFrame(frame);
     }
 
-    // 경주 도중에 공장으로 돌아가면 깔끔히 멈추기 (뒤에서 안 돌게)
-    function leaveRace() {
-      if (raceState.running) {
-        raceState.running = false; // 달리기 멈춤 (회차 번호와 함께 frame이 스스로 멈춤)
-        document.getElementById('raceGoBtn').disabled = false;
-        document.getElementById('engineBtn').disabled = false;
-        document.getElementById('signal').innerHTML = '🔴 ⚪ ⚪';
-      }
-      showScreen('main');
+    // 👆 탭으로 가속 — 누를수록 부스트가 쌓여 빨라짐
+    function tapBoost() {
+      if (!raceState.running) return;
+      raceState.boost += 0.22;
+      if (raceState.boost > 1.0) raceState.boost = 1.0; // 너무 빨라지지 않게 위쪽 제한
     }
 
-    // 결승선 도착 — 이겼는지 졌는지 알려주기
-    function finishRace(playerWon) {
+    // 🏁 완주! — 걸린 시간 기록
+    function finishRace() {
       raceState.running = false;
-      document.getElementById('raceGoBtn').disabled = false;
-      document.getElementById('engineBtn').disabled = false;
-      document.getElementById('raceGoBtn').textContent = '🏁 다시 출발!';
+      var t = (performance.now() - raceState.startTime) / 1000;
+      game.lastRaceTime = t;
+      document.getElementById('raceTime').textContent = '시간: ' + t.toFixed(1) + '초';
       var result = document.getElementById('raceResult');
-      if (playerWon) {
-        game.raceWins += 1;
-        result.textContent = '🏆 이겼다! 신난다! (이긴 횟수: ' + game.raceWins + ')';
-        result.className = 'race-result win';
-      } else {
-        result.textContent = '😅 졌어요... 엔진을 올리고 다시 도전!';
-        result.className = 'race-result lose';
-      }
+      result.textContent = '🏁 완주! 기록: ' + t.toFixed(1) + '초 🎉';
+      result.className = 'race-result win';
+      document.getElementById('raceGoBtn').style.display = 'block';
+      document.getElementById('raceGoBtn').textContent = '🏁 다시 출발!';
+      document.getElementById('tapZone').style.display = 'none';
       save();
-      renderRace();
+      // (다음 단계에서 이 기록을 서버에 보내 유령 대결·순위에 사용)
+    }
+
+    // 대회 도중 공장으로 돌아가면 깔끔히 멈추기
+    function leaveRace() {
+      raceState.running = false;
+      document.getElementById('raceGoBtn').style.display = 'block';
+      document.getElementById('tapZone').style.display = 'none';
+      showScreen('main');
     }
 
     // ===== 🔩 나사 비 받기 보너스 게임 =====
