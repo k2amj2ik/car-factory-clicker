@@ -87,6 +87,23 @@
     /* 🏁 레이싱 화면 */
     #race { display: none; }
     #garage { display: none; }
+
+    /* 🚙 차고 — 만든 자동차 카드 */
+    .garage-sub { color: #6d4c41; font-size: clamp(13px, 4vw, 15px); margin: 2px 0 10px; }
+    .garage-empty { color: #6d4c41; font-size: clamp(14px, 4.2vw, 16px); line-height: 1.6; margin-top: 30px; }
+    #garageList { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .garage-car { width: 150px; background: #fff; border: 3px solid #ffab91; border-radius: 16px;
+      padding: 12px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+      font-family: inherit; cursor: pointer; }
+    .garage-car:active { transform: scale(0.97); }
+    .garage-car img { width: 110px; height: 84px; object-fit: contain; }
+    .garage-car.selected { border-color: #43a047; background: #e8f5e9; }
+    .garage-car.locked { opacity: 0.5; cursor: default; border-style: dashed; background: #faf6f3; }
+    .garage-car .gc-lock { font-size: 54px; height: 84px; display: flex; align-items: center; }
+    .gc-name { font-weight: bold; font-size: clamp(14px, 4vw, 16px); color: #333; }
+    .gc-speed { font-size: 16px; letter-spacing: 1px; }
+    .gc-state { font-size: 13px; font-weight: bold; color: #e65100; }
+    .garage-car.selected .gc-state { color: #2e7d32; }
     #race h1 { color: #5e35b1; }
     .signal { font-size: clamp(26px, 8vw, 36px); letter-spacing: 6px; margin: 6px 0 4px;
       min-height: 44px; font-weight: bold; }
@@ -134,7 +151,8 @@
     .catch-field { position: relative; width: 100%; height: 360px; overflow: hidden;
       background: linear-gradient(180deg, #b2ebf2 0%, #e0f7fa 100%);
       border: 3px solid #4dd0e1; border-radius: 18px; margin: 8px 0;
-      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1); }
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+      touch-action: none; } /* 놀이판은 확대·스크롤 모두 차단(빠른 연타 더블탭 줌 방지) */
     /* 떨어지는 나사 한 개 */
     .falling { position: absolute; top: -50px; font-size: 38px; cursor: pointer;
       user-select: none; line-height: 1; touch-action: none; }
@@ -332,11 +350,11 @@
       <div><button class="back-btn" onclick="showScreen('main')">← 공장으로 돌아가기</button></div>
     </div>
 
-    <!-- 🚙 차고 화면 (다음 단계에서 자동차를 채워요) -->
+    <!-- 🚙 차고 화면 -->
     <div id="garage">
       <h1>🚙 차고</h1>
-      <p style="color:#6d4c41; font-size:clamp(14px,4.2vw,16px); line-height:1.6;">
-        여기에 내가 만든 자동차가 모여요.<br>곧 자동차들이 들어올 거예요! 🚗</p>
+      <p class="garage-sub">대회에 나갈 자동차를 골라요! (⚡가 많을수록 빨라요)</p>
+      <div id="garageList"></div>
     </div>
 
     <!-- 화면 맨 아래 메뉴 막대 -->
@@ -402,6 +420,48 @@
       setMenuActive(name);
       if (name === 'race') renderRace(); // 대회 화면 들어가면 속도 막대 등 그리기
       if (name === 'catch') render();    // 나사 비 화면 들어가면 가진 나사 숫자 갱신
+      if (name === 'garage') renderGarage(); // 차고 들어가면 만든 자동차 그리기
+    }
+
+    // 🚙 차고 그리기 — 만든 자동차는 고를 수 있고, 아직 안 만든 차는 잠김
+    function renderGarage() {
+      var box = document.getElementById('garageList');
+      if (game.carStage === 0) { // 아직 완성한 차가 하나도 없음
+        box.innerHTML = '<p class="garage-empty">아직 만든 자동차가 없어요!<br>🏭 공장에서 장난감차부터 만들어요. 🔧</p>';
+        return;
+      }
+      // 고른 차가 잠긴 차면 가장 좋은(마지막으로 만든) 차로 보정
+      if (game.selectedCar >= game.carStage) game.selectedCar = game.carStage - 1;
+      var html = '';
+      for (var i = 0; i < 4; i++) {
+        var made = i < game.carStage;            // 완성한 차인지
+        var bolts = '⚡'.repeat(i + 1);           // 속도 = 번개 개수 (등급+1)
+        if (made) {
+          var on = (game.selectedCar === i);
+          html += '<button class="garage-car' + (on ? ' selected' : '') + '" onclick="selectCar(' + i + ')">' +
+            '<img src="' + CAR_IMAGES[i] + '" alt="' + CAR_NAMES[i] + '">' +
+            '<div class="gc-name">' + CAR_NAMES[i] + '</div>' +
+            '<div class="gc-speed">' + bolts + '</div>' +
+            '<div class="gc-state">' + (on ? '✅ 골랐어요' : '고르기') + '</div>' +
+            '</button>';
+        } else {
+          html += '<div class="garage-car locked">' +
+            '<div class="gc-lock">🔒</div>' +
+            '<div class="gc-name">' + CAR_NAMES[i] + '</div>' +
+            '<div class="gc-speed">' + bolts + '</div>' +
+            '<div class="gc-state">아직 못 만듦</div>' +
+            '</div>';
+        }
+      }
+      box.innerHTML = html;
+    }
+
+    // 🚙 대회에 나갈 차 고르기 (잠긴 차는 못 고름)
+    function selectCar(i) {
+      if (i >= game.carStage) return;
+      game.selectedCar = i;
+      renderGarage();
+      save();
     }
 
     // 메뉴 4개 중 지금 화면을 강조 (나사비는 공장 메뉴로 묶음)
