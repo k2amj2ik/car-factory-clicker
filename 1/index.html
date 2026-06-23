@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>자동차공장</title>
   <style>
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; touch-action: manipulation; } /* 모든 요소 더블탭 확대 방지 (touch-action은 상속 안 되므로 전체 지정) */
     body {
       font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
       background: linear-gradient(160deg, #fff3e0 0%, #ffccbc 100%);
@@ -365,6 +365,7 @@
       playerName: '', // 🏆 내 이름 (랭킹용)
       playSeconds: 0, // 🏆 게임 시작 후 흐른 시간(초)
       reported: {},   // 🏆 서버에 이미 보낸 등급 표시 {0:true,...}
+      selectedCar: 0, // 🚙 대회에 나갈 차고 차 (등급 0~3)
     };
 
     // 🏆 랭킹 서버 주소 (점수를 보내고 순위를 받아오는 곳)
@@ -376,6 +377,8 @@
     // 각 자동차에 필요한 부품 수: 🧸15 · 🚗40 · 🏎️70 · 🦸100
     const CAR_COSTS = [15, 40, 70, 100];
     function carPartCost(stage) { return CAR_COSTS[stage]; }
+    // 🚙 차마다 기본 속도 (대회에서 사용, 클수록 빠름). 차고 번개 개수는 등급+1(⚡~⚡⚡⚡⚡)
+    const CAR_SPEEDS = [10, 16, 24, 35];
 
     // ▶ 시작하기 — 이름을 받고 게임(main)으로
     function startGame() {
