@@ -106,7 +106,8 @@
     .garage-car.selected .gc-state { color: #2e7d32; }
 
     /* 🏁 대회 — 구불구불 서킷 */
-    .race-car-pick { font-weight: bold; color: #5e35b1; font-size: clamp(15px, 4.6vw, 18px); margin: 4px 0 8px; }
+    .race-car-pick { font-weight: bold; color: #5e35b1; font-size: clamp(15px, 4.6vw, 18px); margin: 4px 0 4px; }
+    .race-vs { font-size: clamp(13px, 4vw, 15px); color: #6d4c41; font-weight: bold; margin-bottom: 6px; min-height: 18px; }
     .circuit-wrap { width: 100%; max-width: 340px; margin: 6px auto; }
     .circuit-svg { width: 100%; height: auto; display: block; background: #c8e6c9; border-radius: 18px;
       box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.12); }
@@ -287,6 +288,7 @@
     <div id="race">
       <h1>🏁 자동차 경주 🏎️</h1>
       <div class="race-car-pick" id="raceCarPick">차고에서 차를 골라요!</div>
+      <div class="race-vs" id="raceVs"></div>
 
       <!-- 구불구불 S자 서킷 -->
       <div class="circuit-wrap">
@@ -300,6 +302,8 @@
           <!-- 출발/결승 표시 -->
           <text x="20" y="78" font-size="20" text-anchor="middle">🟢</text>
           <text x="280" y="78" font-size="20" text-anchor="middle">🏁</text>
+          <!-- 유령(친구 기록) 차 — 반투명 -->
+          <image id="ghostCarMarker" width="30" height="30" opacity="0.5" style="display:none;" />
           <!-- 내 차 (달릴 때 길 따라 움직임) -->
           <image id="raceCarMarker" width="32" height="32" />
         </svg>
@@ -416,7 +420,7 @@
       // 메뉴 막대: 시작 화면(intro)에선 숨기고, 게임 중엔 보이기 + 현재 메뉴 강조
       document.getElementById('menuBar').style.display = (name === 'intro') ? 'none' : 'flex';
       setMenuActive(name);
-      if (name === 'race') renderRace(); // 대회 화면 들어가면 속도 막대 등 그리기
+      if (name === 'race') { if (!raceState.running) resetRaceView(); renderRace(); } // 대회 화면: 새로 들어오면 초기화 후 그리기
       if (name === 'catch') render();    // 나사 비 화면 들어가면 가진 나사 숫자 갱신
       if (name === 'garage') renderGarage(); // 차고 들어가면 만든 자동차 그리기
     }
@@ -590,40 +594,79 @@
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    // ===== 🏁 자동차 경주(대회) — 구불구불 서킷 =====
-    // 달리는 중인지, 진행도(0~1), 부스트(탭 가속), 시작시각, 회차 번호
-    var raceState = { running: false, progress: 0, boost: 0, startTime: 0, token: 0 };
+    // ===== 🏁 자동차 경주(대회) — 구불구불 서킷 + 유령 대결 =====
+    // 달리는 중인지, 진행도(0~1), 부스트(탭 가속), 시작시각, 회차 번호, 유령(친구 기록)
+    var raceState = { running: false, progress: 0, boost: 0, startTime: 0, token: 0, ghost: null };
 
     // 차를 서킷 길(0~1 비율) 위에 올려놓기 + 길 방향으로 회전
-    function placeCarAt(progress) {
+    function placeOnTrack(markerId, progress, half) {
       var path = document.getElementById('trackPath');
       var len = path.getTotalLength();
       var p = path.getPointAtLength(progress * len);
       var p2 = path.getPointAtLength(Math.min(progress + 0.01, 1) * len);
       var angle = Math.atan2(p2.y - p.y, p2.x - p.x) * 180 / Math.PI; // 진행 방향 각도
-      var m = document.getElementById('raceCarMarker');
-      m.setAttribute('x', p.x - 16);
-      m.setAttribute('y', p.y - 16);
+      var m = document.getElementById(markerId);
+      m.setAttribute('x', p.x - half);
+      m.setAttribute('y', p.y - half);
       m.setAttribute('transform', 'rotate(' + angle + ' ' + p.x + ' ' + p.y + ')');
     }
+    function placeCarAt(progress) { placeOnTrack('raceCarMarker', progress, 16); }
+    function placeGhostAt(progress) { placeOnTrack('ghostCarMarker', progress, 15); }
 
-    // 대회 화면 그리기 — 고른 차 보여주고 출발점에 놓기 (달리는 중엔 안 건드림)
+    // 기본 컴퓨터 친구의 완주 시간(ms) — 가만 뒀을 때보다 살짝 느림 (탭하면 이길 수 있게)
+    function computerMs(car) { return Math.round(1000 / (CAR_SPEEDS[car] * 0.011) * 1.15); }
+
+    // 유령(상대) 가져오기 — 같은 차종 친구 기록 1명, 없으면 기본 컴퓨터
+    async function fetchGhost(car) {
+      try {
+        var res = await fetch(SERVER_URL + '/race-ghost?car=' + car + '&exclude=' + encodeURIComponent(game.playerName || ''));
+        var g = await res.json();
+        if (g && g.race_ms) return { name: g.name, ms: g.race_ms };
+      } catch (e) {}
+      return { name: '🤖 컴퓨터', ms: computerMs(car) };
+    }
+
+    // 대회 화면 처음 들어올 때 초기화 (출발 전 상태로)
+    function resetRaceView() {
+      raceState.progress = 0;
+      var r = document.getElementById('raceResult'); r.textContent = ''; r.className = 'race-result';
+      var go = document.getElementById('raceGoBtn'); go.textContent = '🏁 출발!'; go.style.display = 'block';
+      document.getElementById('tapZone').style.display = 'none';
+      document.getElementById('ghostCarMarker').style.display = 'none';
+      document.getElementById('raceVs').textContent = '';
+      document.getElementById('raceTime').textContent = '시간: 0.0초';
+    }
+
+    // 대회 화면 그리기 — 고른 차 보여주고 출발점/결승선에 놓기 (달리는 중엔 안 건드림)
     function renderRace() {
       var car = game.selectedCar;
-      if (game.carStage === 0) { // 아직 만든 차가 없으면
+      if (game.carStage === 0) {
         document.getElementById('raceCarPick').textContent = '먼저 공장에서 자동차를 만들어요!';
       } else {
         document.getElementById('raceCarPick').textContent = '🚗 ' + CAR_NAMES[car] + '로 달려요! (' + '⚡'.repeat(car + 1) + ')';
       }
-      document.getElementById('raceCarMarker').setAttributeNS('http://www.w3.org/1999/xlink', 'href', CAR_IMAGES[car]);
       document.getElementById('raceCarMarker').setAttribute('href', CAR_IMAGES[car]);
-      if (!raceState.running) placeCarAt(0);
+      if (!raceState.running) {
+        placeCarAt(raceState.progress); // 출발 전이면 0(출발점), 완주 후면 1(결승선) 유지
+      }
     }
 
-    // 🏁 출발!
-    function startRace() {
+    // 🏁 출발! — 유령(상대)을 불러온 뒤 같이 달리기
+    async function startRace() {
       if (raceState.running) return;
       if (game.carStage === 0) { alert('먼저 공장에서 자동차를 만들어요!'); return; }
+      var car = game.selectedCar;
+      var goBtn = document.getElementById('raceGoBtn');
+      goBtn.disabled = true;
+      raceState.ghost = await fetchGhost(car); // 상대 기록 불러오기
+      goBtn.disabled = false;
+      // 유령 차 준비
+      var gm = document.getElementById('ghostCarMarker');
+      gm.setAttribute('href', CAR_IMAGES[car]);
+      gm.style.display = 'block';
+      placeGhostAt(0);
+      document.getElementById('raceVs').textContent = '👻 상대: ' + raceState.ghost.name + ' (' + (raceState.ghost.ms / 1000).toFixed(1) + '초)';
+
       raceState.running = true;
       raceState.token += 1;
       var myToken = raceState.token;
@@ -632,7 +675,7 @@
       raceState.startTime = performance.now();
       var result = document.getElementById('raceResult');
       result.textContent = ''; result.className = 'race-result';
-      document.getElementById('raceGoBtn').style.display = 'none';
+      goBtn.style.display = 'none';
       document.getElementById('tapZone').style.display = 'block';
       var last = null;
       function frame(now) {
@@ -642,6 +685,9 @@
         var base = CAR_SPEEDS[game.selectedCar] * 0.011; // 차 기본 속도 (가만 둬도 천천히 감)
         raceState.progress += (base + raceState.boost) * dt;
         raceState.boost *= Math.pow(0.15, dt);           // 부스트는 탭 안 하면 빠르게 줄어듦
+        // 유령은 자기 기록 시간만큼 일정하게 달림
+        var gp = Math.min((now - raceState.startTime) / raceState.ghost.ms, 1);
+        placeGhostAt(gp);
         if (raceState.progress >= 1) { raceState.progress = 1; placeCarAt(1); finishRace(); return; }
         placeCarAt(raceState.progress);
         document.getElementById('raceTime').textContent = '시간: ' + ((now - raceState.startTime) / 1000).toFixed(1) + '초';
@@ -657,20 +703,42 @@
       if (raceState.boost > 1.0) raceState.boost = 1.0; // 너무 빨라지지 않게 위쪽 제한
     }
 
-    // 🏁 완주! — 걸린 시간 기록
+    // 🏁 완주! — 걸린 시간 기록 + 서버 전송 + 유령과 승부 판정
     function finishRace() {
       raceState.running = false;
-      var t = (performance.now() - raceState.startTime) / 1000;
+      var ms = Math.round(performance.now() - raceState.startTime);
+      var t = ms / 1000;
       game.lastRaceTime = t;
       document.getElementById('raceTime').textContent = '시간: ' + t.toFixed(1) + '초';
+      reportRaceRecord(game.selectedCar, ms); // 내 기록을 서버에 보내기
+
       var result = document.getElementById('raceResult');
-      result.textContent = '🏁 완주! 기록: ' + t.toFixed(1) + '초 🎉';
-      result.className = 'race-result win';
+      var g = raceState.ghost;
+      if (g && ms < g.ms) {
+        result.textContent = '🏆 이겼다! ' + t.toFixed(1) + '초 — ' + g.name + ' 이김!';
+        result.className = 'race-result win';
+      } else if (g) {
+        result.textContent = '😅 졌어요... ' + g.name + '(' + (g.ms / 1000).toFixed(1) + '초)가 더 빨랐어요. 다시!';
+        result.className = 'race-result lose';
+      } else {
+        result.textContent = '🏁 완주! 기록: ' + t.toFixed(1) + '초 🎉';
+        result.className = 'race-result win';
+      }
       document.getElementById('raceGoBtn').style.display = 'block';
       document.getElementById('raceGoBtn').textContent = '🏁 다시 출발!';
       document.getElementById('tapZone').style.display = 'none';
       save();
-      // (다음 단계에서 이 기록을 서버에 보내 유령 대결·순위에 사용)
+    }
+
+    // 🏁 대회 기록을 서버에 보내기 (실패해도 게임은 그대로)
+    function reportRaceRecord(car, ms) {
+      if (!game.playerName) return;
+      try {
+        fetch(SERVER_URL + '/race-record', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: game.playerName, car_stage: car, race_ms: ms }),
+        }).catch(function () {});
+      } catch (e) {}
     }
 
     // 대회 도중 공장으로 돌아가면 깔끔히 멈추기
@@ -678,6 +746,7 @@
       raceState.running = false;
       document.getElementById('raceGoBtn').style.display = 'block';
       document.getElementById('tapZone').style.display = 'none';
+      document.getElementById('ghostCarMarker').style.display = 'none';
       showScreen('main');
     }
 
