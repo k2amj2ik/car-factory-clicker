@@ -53,6 +53,15 @@
     /* 중간: 내가 모은 것 */
     .resource-area { background: #fff; border-radius: 14px; padding: 12px; margin: 12px 0; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); font-size: clamp(15px, 4.6vw, 20px); font-weight: bold; color: #333; }
     .pps { color: #e65100; }
+    /* 나사·부품 표시 — 버튼 아닌 얇은 정보 띠 (플랫) */
+    .resource-bar { font-size: clamp(14px, 4.4vw, 18px); font-weight: bold; color: #6d4c41; margin: 6px 0; padding: 2px 0; }
+    .resource-bar b { color: #c62828; }
+    .resource-bar .pps-note { font-size: 0.82em; color: #e65100; font-weight: bold; }
+    /* 나사 부스터 2개 나란히 */
+    .action-row { display: flex; gap: 8px; margin: 8px 0; }
+    .action-item.half { width: auto; flex: 1; margin: 0; flex-direction: column; justify-content: center; gap: 3px; padding: 11px 6px; text-align: center; }
+    .action-item.half .action-name { font-size: clamp(13px, 4vw, 16px); }
+    .action-item.half .action-info { font-size: clamp(12px, 3.6vw, 14px); white-space: normal; }
 
     /* 하단: 할 수 있는 액션 */
     .action-item {
@@ -199,6 +208,11 @@
     /* 🏆 랭킹 화면 */
     #ranking { display: none; }
     #ranking h1 { color: #f57f17; }
+    .rank-mode-tabs { display: flex; gap: 8px; justify-content: center; margin: 8px 0; }
+    .rank-mode { font-size: clamp(14px, 4.2vw, 17px); font-weight: bold; background: #fff;
+      border: 2px solid #ffca28; color: #f57f17; border-radius: 14px; padding: 10px 16px; cursor: pointer; }
+    .rank-mode.on { background: #f57f17; color: #fff; }
+    .rank-mode:active { transform: scale(0.96); }
     .rank-tabs { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 10px 0; }
     .rank-tab { font-size: clamp(13px, 4vw, 16px); font-weight: bold; background: #fff;
       border: 2px solid #ffca28; color: #f57f17; border-radius: 12px; padding: 9px 12px; }
@@ -256,12 +270,13 @@
       <div class="tap-hint">👆 자동차를 톡톡 누르면 나사가 모여요!</div>
       <div class="clear-message" id="clearMessage">🎉 축하해요! 슈퍼카 완성! 🏁<br>아래 🏁 대회 메뉴에서 경주해요!</div>
 
-      <!-- 중간: 내가 모은 것 -->
-      <div class="resource-area">
-        🔩 나사: <span class="screw-num">0</span>(초당+<span class="pps">0</span>) &nbsp; 🔧 부품: <span class="part-num">0</span>
+      <!-- 중간: 내가 모은 것 (얇은 띠, 정보 표시) -->
+      <div class="resource-bar">
+        🔩 나사 <b><span class="screw-num">0</span></b> <span class="pps-note">(초당+<span class="pps">0</span>)</span>
+        &nbsp;·&nbsp; 🔧 부품 <b><span class="part-num">0</span></b>
       </div>
 
-      <!-- 하단: 할 수 있는 액션 (위에서부터 순서) -->
+      <!-- 핵심 액션 (자주 누르는 것, 크게) -->
       <button class="action-item" id="actBuild" onclick="buildCar()">
         <span class="action-name">🚗 자동차 조립</span>
         <span class="action-info" id="buildInfo">부품 15개</span>
@@ -274,14 +289,17 @@
         <span class="action-name">🔩 나사 모으기</span>
         <span class="action-info">한 번 +<span class="per-click">1</span>개</span>
       </button>
-      <button class="action-item" id="actRobot" onclick="buyRobot()">
-        <span class="action-name">🤖 자동 로봇</span>
-        <span class="action-info">나사 <span id="robotCost">150</span>개</span>
-      </button>
-      <button class="action-item" id="actDriver" onclick="buyDriver()">
-        <span class="action-name">🪛 더 센 드라이버</span>
-        <span class="action-info">나사 <span id="driverCost">50</span>개</span>
-      </button>
+      <!-- 나사 부스터 2개 (목적이 같아 나란히) -->
+      <div class="action-row">
+        <button class="action-item half" id="actRobot" onclick="buyRobot()">
+          <span class="action-name">🤖 자동 로봇</span>
+          <span class="action-info">나사 <span id="robotCost">150</span>개</span>
+        </button>
+        <button class="action-item half" id="actDriver" onclick="buyDriver()">
+          <span class="action-name">🪛 더 센 드라이버</span>
+          <span class="action-info">나사 <span id="driverCost">50</span>개</span>
+        </button>
+      </div>
     </div>
 
     <!-- 🏁 자동차 경주(대회) 화면 - 구불구불 서킷 -->
@@ -339,8 +357,12 @@
 
     <!-- 🏆 랭킹 화면 -->
     <div id="ranking">
-      <h1>🏆 빨리 만들기 순위</h1>
-      <p style="color:#6d4c41; font-size:clamp(13px,4vw,15px); margin:2px 0 6px;">누가 자동차를 제일 빨리 만들었나?</p>
+      <h1>🏆 순위</h1>
+      <div class="rank-mode-tabs">
+        <button class="rank-mode on" id="modeMake" onclick="setRankMode('make')">🔧 빨리 만들기</button>
+        <button class="rank-mode" id="modeRace" onclick="setRankMode('race')">🏁 대회 기록</button>
+      </div>
+      <p id="rankDesc" style="color:#6d4c41; font-size:clamp(13px,4vw,15px); margin:2px 0 6px;">누가 자동차를 제일 빨리 만들었나?</p>
       <div class="rank-tabs">
         <button class="rank-tab" id="rankTab0" onclick="openRanking(0)">🧸 장난감차</button>
         <button class="rank-tab" id="rankTab1" onclick="openRanking(1)">🚗 자동차</button>
@@ -563,30 +585,67 @@
       return sec + '초';
     }
 
-    // 🏆 랭킹 열기/그리기 — 등급(stage 0~3)의 순위를 서버에서 받아 보여줌
+    // 🏆 순위 — 'make'(빨리 만들기) / 'race'(대회 기록) 두 모드, 보고 있는 등급(차종)
+    var rankMode = 'make';
+    var rankStage = 2;
+
+    // 순위 열기 — 메뉴 또는 등급 탭에서 호출
     async function openRanking(stage) {
+      rankStage = stage;
       showScreen('ranking');
-      // 탭 강조(누른 등급만 색칠)
+      updateRankTabs();
+      await loadRanking();
+    }
+
+    // 빨리 만들기 ↔ 대회 기록 전환
+    function setRankMode(mode) {
+      rankMode = mode;
+      updateRankTabs();
+      loadRanking();
+    }
+
+    // 모드·등급 탭 강조 + 설명 문구
+    function updateRankTabs() {
+      document.getElementById('modeMake').classList.toggle('on', rankMode === 'make');
+      document.getElementById('modeRace').classList.toggle('on', rankMode === 'race');
       for (var i = 0; i < 4; i++) {
-        document.getElementById('rankTab' + i).classList.toggle('on', i === stage);
+        document.getElementById('rankTab' + i).classList.toggle('on', i === rankStage);
       }
+      document.getElementById('rankDesc').textContent = (rankMode === 'make')
+        ? '누가 자동차를 제일 빨리 만들었나?' : '누가 서킷을 제일 빨리 달렸나?';
+    }
+
+    // 서버에서 순위를 받아 그리기 (모드에 따라 다른 곳에서)
+    async function loadRanking() {
       var box = document.getElementById('rankList');
       box.textContent = '불러오는 중...';
       var names = ['장난감차', '자동차', '스포츠카', '슈퍼카'];
+      var stage = rankStage;
       try {
-        var res = await fetch(SERVER_URL + '/ranking?stage=' + stage);
-        var list = await res.json();
-        if (!list.length) { box.textContent = '아직 ' + names[stage] + '를 만든 친구가 없어요!'; return; }
-        box.innerHTML = '<h3>🏆 ' + names[stage] + ' 빨리 만들기</h3>' +
-          list.map(function (r, i) {
-            var medal = ['🥇', '🥈', '🥉'][i] || (i + 1) + '등';
-            var mine = (r.name === game.playerName) ? ' me' : '';
-            return '<div class="rank-row' + mine + '"><span class="who">' + medal + ' ' + escapeHtml(r.name) +
-              '</span><span class="when">' + fmtTime(r.play_seconds) + '</span></div>';
-          }).join('');
+        if (rankMode === 'make') {
+          var res = await fetch(SERVER_URL + '/ranking?stage=' + stage);
+          var list = await res.json();
+          if (!list.length) { box.textContent = '아직 ' + names[stage] + '를 만든 친구가 없어요!'; return; }
+          box.innerHTML = '<h3>🔧 ' + names[stage] + ' 빨리 만들기</h3>' + rankRows(list, function (r) { return fmtTime(r.play_seconds); });
+        } else {
+          var res = await fetch(SERVER_URL + '/race-ranking?car=' + stage);
+          var list = await res.json();
+          if (!list.length) { box.textContent = '아직 ' + names[stage] + '로 달린 친구가 없어요!'; return; }
+          box.innerHTML = '<h3>🏁 ' + names[stage] + ' 대회 기록</h3>' + rankRows(list, function (r) { return (r.race_ms / 1000).toFixed(1) + '초'; });
+        }
       } catch (e) {
         box.textContent = '순위를 못 불러왔어요(인터넷 확인). 잠시 후 다시!';
       }
+    }
+
+    // 순위 줄 만들기 (메달 + 이름 + 기록). valueFn으로 시간 표시를 모드별로 바꿈
+    function rankRows(list, valueFn) {
+      return list.map(function (r, i) {
+        var medal = ['🥇', '🥈', '🥉'][i] || (i + 1) + '등';
+        var mine = (r.name === game.playerName) ? ' me' : '';
+        return '<div class="rank-row' + mine + '"><span class="who">' + medal + ' ' + escapeHtml(r.name) +
+          '</span><span class="when">' + valueFn(r) + '</span></div>';
+      }).join('');
     }
 
     // 이름에 <,>,& 같은 글자가 있어도 안전하게 보여주기
