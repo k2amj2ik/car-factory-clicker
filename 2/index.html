@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>태영이 자동차공장</title>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: linear-gradient(160deg, #fff3e0 0%, #ffccbc 100%);
+      background-attachment: fixed;
+      color: #444; user-select: none; -webkit-user-select: none;
+      min-height: 100vh;
+    }
+    #app { max-width: 480px; margin: 0 auto; padding: 10px 12px 40px; }
+
+    /* 상단바 */
+    #topbar {
+      display: flex; justify-content: space-between; gap: 6px;
+      background: #fff; border-radius: 14px; padding: 12px 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.10); font-weight: bold; font-size: 15px;
+      position: sticky; top: 8px; z-index: 20;
+    }
+    #topbar span { white-space: nowrap; }
+
+    /* 탭 */
+    #tabs { display: flex; gap: 8px; margin: 12px 0; }
+    #tabs button {
+      flex: 1; padding: 12px 0; border: none; border-radius: 12px; cursor: pointer;
+      background: #ffffffcc; color: #888; font-weight: bold; font-size: 15px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.08); transition: .15s;
+    }
+    #tabs button.active { background: #e53935; color: #fff; transform: translateY(-1px); }
+
+    /* 카드 */
+    .card {
+      background: #fff; border-radius: 16px; padding: 16px;
+      box-shadow: 0 4px 14px rgba(0,0,0,.10); margin-bottom: 12px;
+    }
+    .card h3 { margin: 0 0 10px; color: #e53935; font-size: 16px; }
+    .card p { margin: 6px 0; font-size: 14px; line-height: 1.5; }
+    .muted { color: #999; font-size: 13px; }
+
+    /* 버튼 */
+    button.act {
+      border: none; border-radius: 12px; padding: 10px 14px; cursor: pointer;
+      background: #ff7043; color: #fff; font-weight: bold; font-size: 14px;
+      box-shadow: 0 3px 8px rgba(255,112,67,.4); margin: 4px 4px 0 0;
+    }
+    button.act:active { transform: scale(.97); }
+    button.ghost { background: #fff; color: #e53935; border: 2px solid #ffccbc; box-shadow: none; }
+    button.act:disabled { background: #ccc; box-shadow: none; cursor: default; }
+
+    .big {
+      display: block; width: 100%; padding: 26px 0; font-size: 22px; margin: 8px 0;
+      border: none; border-radius: 18px; cursor: pointer; font-weight: bold; color: #fff;
+      background: radial-gradient(circle at 50% 30%, #ff8a65, #e53935);
+      box-shadow: 0 6px 18px rgba(229,57,53,.4);
+    }
+    .big:active { transform: scale(.97); }
+
+    /* 게이지 */
+    .gauge { height: 14px; background: #ffe0d4; border-radius: 8px; overflow: hidden; margin: 8px 0; }
+    .gauge > i { display: block; height: 100%; background: #ff7043; transition: width .1s; }
+
+    /* 부품 저장고 그리드 */
+    .parts { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 8px; }
+    .parts div { text-align: center; font-size: 13px; background: #fff7f3; border-radius: 10px; padding: 6px 0; }
+    .parts div b { display: block; font-size: 18px; }
+
+    /* 시세 */
+    .price { font-size: 20px; color: #e53935; font-weight: bold; }
+    .up { color: #2e7d32; } .down { color: #c62828; }
+
+    /* 토스트 */
+    #toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(40px);
+      background: #1a1a1a; color: #fff; padding: 11px 18px; border-radius: 22px;
+      font-size: 14px; opacity: 0; transition: .25s; z-index: 50; max-width: 90%; text-align: center;
+      box-shadow: 0 6px 16px rgba(0,0,0,.3); pointer-events: none;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* 부품 생산 pop */
+    @keyframes pop { 0%{transform:scale(.4);opacity:0} 50%{transform:scale(1.2);opacity:1} 100%{transform:scale(1);opacity:1} }
+    .pop { animation: pop .3s; }
+
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .lock { text-align: center; padding: 10px; }
+    .lock .icon { font-size: 48px; }
+    .count { font-size: 26px; font-weight: bold; color: #333; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <span id="money">💰 0원</span>
+      <span id="bag">🎒 0/10</span>
+      <span id="garage">🚗 0/10</span>
+    </header>
+    <nav id="tabs">
+      <button data-tab="mine" class="active">⛏️ 광산</button>
+      <button data-tab="factory">🏭 공장</button>
+      <button data-tab="shop">🛒 상점</button>
+    </nav>
+    <main>
+      <section id="tab-mine" class="tab"></section>
+      <section id="tab-factory" class="tab" hidden></section>
+      <section id="tab-shop" class="tab" hidden></section>
+    </main>
+  </div>
+  <div id="toast"></div>
+
+<script>
+/* ===================== STATE ===================== */
+const KEY = 'taeyoung_factory_v2';
+const PART_TYPES = ['타이어','엔진','차체','핸들','유리','범퍼','시트','헤드라이트','배터리','브레이크'];
+const PART_ICON = {타이어:'🛞',엔진:'⚙️',차체:'🚙',핸들:'🎡',유리:'🪟',범퍼:'🛡️',시트:'💺',헤드라이트:'💡',배터리:'🔋',브레이크:'🛑'};
+
+function defaultState(){
+  return {
+    money: 100,
+    bag: [], bagCap: 10,
+    garage: [], garageCap: 10,
+    partsStock: PART_TYPES.reduce((o,t)=>(o[t]=0,o),{}),
+    factory: 'locked',          // locked | repairing_paid | repairing | running
+    repairEnd: 0,
+    processBots: 0, processIdx: 0,
+    assembleBots: 0,
+    autoMiners: 0,
+    mineralPrice: 30, mineralPrev: 30,
+    carPrice: 300, carPrev: 300,
+    nextPriceAt: 0,
+    clicks: 0,
+    upgrades: { pick:0, bag:0, botspeed:0, luck:0, garage:0, autominer:0 },
+    milestones: {},
+    lastSeen: Date.now()
+  };
+}
+let S = load();
+
+/* ===================== PERSIST ===================== */
+function load(){
+  try { const r = JSON.parse(localStorage.getItem(KEY));
+        if(!r) return defaultState();
+        const d = defaultState(); Object.assign(d, r);
+        d.partsStock = Object.assign(defaultState().partsStock, r.partsStock||{});
+        d.upgrades = Object.assign(defaultState().upgrades, r.upgrades||{});
+        return d;
+  } catch(e){ return defaultState(); }
+}
+function save(){ S.lastSeen = Date.now(); try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ===================== PRICES ===================== */
+const MIN_LO=10, MIN_HI=50, CAR_LO=200, CAR_HI=600, PRICE_PERIOD=60000;
+function priceAfter(price, lo, hi){
+  const delta = price * (Math.random()*0.30 - 0.15);
+  return Math.min(hi, Math.max(lo, Math.round(price + delta)));
+}
+function stepPrices(now){
+  if(S.nextPriceAt===0) S.nextPriceAt = now + PRICE_PERIOD;
+  let changed=false;
+  while(now >= S.nextPriceAt){
+    S.mineralPrev = S.mineralPrice; S.carPrev = S.carPrice;
+    S.mineralPrice = priceAfter(S.mineralPrice, MIN_LO, MIN_HI);
+    S.carPrice     = priceAfter(S.carPrice, CAR_LO, CAR_HI);
+    S.nextPriceAt += PRICE_PERIOD; changed=true;
+  }
+  return changed;
+}
+
+/* ===================== MINING ===================== */
+function clicksPerBox(){ return Math.max(1, 5 - S.upgrades.pick); }
+function gemChance(){ return 0.10 + 0.01*S.upgrades.luck; }
+function sellPrice(item){ return item.type==='gem' ? S.mineralPrice*5 : S.mineralPrice; }
+function addToBag(item){
+  if(S.bag.length >= S.bagCap){
+    const old = S.bag.shift();
+    S.money += Math.round(sellPrice(old) * 0.5);
+    toast('가방이 꽉 차 '+(old.type==='gem'?'보석':'광물')+' 1개가 50%에 자동 판매됐어요');
+  }
+  S.bag.push(item);
+}
+function mineClick(){
+  S.clicks++;
+  if(S.clicks >= clicksPerBox()){
+    S.clicks = 0;
+    addToBag({type:'mineral'});
+    if(Math.random() < gemChance()){ addToBag({type:'gem'}); toast('💎 보석을 발견했어요!'); }
+  }
+  save(); render();
+}
+function sellOne(type){
+  const i = S.bag.findIndex(x=>x.type===type);
+  if(i<0){ toast('팔 '+(type==='gem'?'보석':'광물')+'이 없어요'); return; }
+  const it = S.bag.splice(i,1)[0]; S.money += sellPrice(it);
+  save(); render();
+}
+function sellAll(type){
+  let n=0; for(let i=S.bag.length-1;i>=0;i--){ if(S.bag[i].type===type){ S.money+=sellPrice(S.bag[i]); S.bag.splice(i,1); n++; } }
+  if(n) toast(n+'개 판매 완료'); else toast('팔 게 없어요');
+  save(); render();
+}
+
+/* ===================== FACTORY & ROBOTS ===================== */
+const HOUR=3600000;
+function unlockFactory(){ if(S.factory!=='locked')return; if(S.money<100){toast('100원이 필요해요');return;} S.money-=100; S.factory='repairing_paid'; save(); render(); }
+function startRepair(){
+  if(S.factory!=='repairing_paid')return; if(S.money<50){toast('수리비 50원이 필요해요');return;}
+  S.money-=50;
+  const hrs = 1 + Math.floor(Math.random()*24);
+  S.repairEnd = Date.now() + hrs*HOUR;
+  S.factory='repairing'; save(); render();
+  toast('정비사 호출! 약 '+hrs+'시간 뒤 가동돼요');
+}
+function repairRemain(now){ return Math.max(0, S.repairEnd - now); }
+function factoryReady(now){
+  if(S.factory==='repairing' && now>=S.repairEnd){ S.factory='running'; toast('🏭 공장이 가동을 시작했어요!'); }
+  return S.factory==='running';
+}
+function fmtDur(ms){ const s=Math.ceil(ms/1000); const h=Math.floor(s/3600),m=Math.floor(s%3600/60),ss=s%60; return (h?h+'시간 ':'')+(m?m+'분 ':'')+ss+'초'; }
+
+function buyProcessBot(){ if(S.factory!=='running'){toast('공장 가동 후 구매 가능');return;} if(S.money<100){toast('100원이 필요해요');return;} S.money-=100; S.processBots++; save(); render(); }
+function buyAssembleBot(){ if(S.factory!=='running'){toast('공장 가동 후 구매 가능');return;} if(S.money<100){toast('100원이 필요해요');return;} S.money-=100; S.assembleBots++; save(); render(); }
+
+function addToGarage(){
+  if(S.garage.length >= S.garageCap){
+    S.garage.shift(); S.money += Math.round(S.carPrice*0.5);
+    toast('차고가 꽉 차 자동차 1대가 50%에 자동 판매됐어요');
+  }
+  S.garage.push({ts:Date.now()});
+}
+function botInterval(){ return Math.max(0.2, 1 - 0.1*S.upgrades.botspeed); }
+function runProduction(seconds){
+  const made = {parts:0, cars:0};
+  if(S.factory!=='running') return made;
+  const rate = 1/botInterval();
+  let capacity = Math.floor(S.processBots * rate * seconds);
+  while(capacity-- > 0){
+    const mi = S.bag.findIndex(x=>x.type==='mineral'); if(mi<0) break;
+    S.bag.splice(mi,1);
+    const t = PART_TYPES[S.processIdx % PART_TYPES.length]; S.processIdx++;
+    S.partsStock[t]++; made.parts++;
+  }
+  let acap = Math.floor(S.assembleBots * rate * seconds);
+  while(acap-- > 0){
+    if(!PART_TYPES.every(t=>S.partsStock[t]>=1)) break;
+    PART_TYPES.forEach(t=>S.partsStock[t]--);
+    addToGarage(); made.cars++;
+  }
+  return made;
+}
+function sellCar(){ if(!S.garage.length){toast('자동차가 없어요');return;} S.garage.shift(); S.money+=S.carPrice; save(); render(); }
+function sellAllCars(){ const n=S.garage.length; if(!n){toast('자동차가 없어요');return;} S.money+=n*S.carPrice; S.garage=[]; toast(n+'대 판매!'); save(); render(); }
+
+/* ===================== AUTO MINER ===================== */
+function autoMineInterval(){ return 3; }
+function runMining(seconds){
+  if(S.autoMiners<=0) return 0;
+  let n = Math.floor(S.autoMiners * seconds / autoMineInterval());
+  for(let i=0;i<n;i++){ addToBag({type:'mineral'}); if(Math.random()<gemChance()) addToBag({type:'gem'}); }
+  return n;
+}
+
+/* ===================== SHOP ===================== */
+const UPG = {
+  pick:     {name:'좋은 곡갱이', icon:'⛏️', desc:'채광에 필요한 클릭 수 감소', base:50,  max:4},
+  bag:      {name:'큰 가방',     icon:'🎒', desc:'가방 +5칸',                base:80,  max:20},
+  botspeed: {name:'빠른 로봇',   icon:'⚡', desc:'가공·조립 로봇 속도 ↑',    base:200, max:8},
+  luck:     {name:'행운·품질',   icon:'🍀', desc:'보석 등장 확률 +1%',       base:150, max:10},
+  garage:   {name:'차고 확장',   icon:'🏬', desc:'차고 +5대',                base:120, max:20},
+  autominer:{name:'자동 채굴 로봇', icon:'🤖', desc:'클릭 없이 광물 자동 채굴 (오프라인 포함)', base:300, max:50}
+};
+function upgradeCost(key){ return Math.round(UPG[key].base * Math.pow(1.6, S.upgrades[key])); }
+function buyUpgrade(key){
+  const u=UPG[key]; if(S.upgrades[key]>=u.max){toast('최대 레벨이에요');return;}
+  const c=upgradeCost(key); if(S.money<c){toast(c+'원이 필요해요');return;}
+  S.money-=c; S.upgrades[key]++;
+  if(key==='bag') S.bagCap+=5;
+  if(key==='garage') S.garageCap+=5;
+  if(key==='autominer') S.autoMiners++;
+  toast(u.name+' 구매!'); save(); render();
+}
+
+/* ===================== MILESTONES ===================== */
+function checkMilestones(){
+  const ms=[
+    ['firstCar', ()=>S.garage.length>=1, '🎉 첫 자동차 완성!'],
+    ['bots5', ()=>S.processBots+S.assembleBots>=5, '🏭 로봇 5대 돌파!'],
+    ['rich', ()=>S.money>=10000, '💎 자산 1만원 달성!']
+  ];
+  ms.forEach(([k,cond,msg])=>{ if(!S.milestones[k]&&cond()){ S.milestones[k]=true; toast(msg);} });
+}
+
+/* ===================== OFFLINE ===================== */
+function settleOffline(){
+  const now = Date.now();
+  const elapsed = Math.max(0, (now - S.lastSeen)/1000);
+  if(elapsed < 2) return null;
+  factoryReady(now);
+  const mined = runMining(elapsed);
+  const made  = runProduction(elapsed);
+  S.lastSeen = now; save();
+  if(mined===0 && made.parts===0 && made.cars===0) return null;
+  return {elapsed, mined, parts:made.parts, cars:made.cars};
+}
+
+/* ===================== RENDER ===================== */
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2400); }
+
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(s=>s.hidden = (s.id !== 'tab-'+name));
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  render();
+}
+function arrow(cur, prev){ if(cur>prev) return '<span class="up">▲</span>'; if(cur<prev) return '<span class="down">▼</span>'; return ''; }
+
+function renderTop(){
+  document.getElementById('money').textContent = '💰 '+Math.floor(S.money).toLocaleString()+'원';
+  document.getElementById('bag').textContent = '🎒 '+S.bag.length+'/'+S.bagCap;
+  document.getElementById('garage').textContent = '🚗 '+S.garage.length+'/'+S.garageCap;
+}
+
+function renderMine(){
+  const m = S.bag.filter(x=>x.type==='mineral').length, g = S.bag.filter(x=>x.type==='gem').length;
+  const pct = Math.round(100*S.clicks/clicksPerBox());
+  document.getElementById('tab-mine').innerHTML = `
+    <div class="card">
+      <h3>⛏️ 광산</h3>
+      <p>광물 시세 <span class="price">${S.mineralPrice}원</span> ${arrow(S.mineralPrice,S.mineralPrev)}
+         · 보석 <span class="price">${S.mineralPrice*5}원</span></p>
+      <div class="gauge"><i style="width:${pct}%"></i></div>
+      <button id="pick" class="big">⛏️ 곡갱이질<br><span style="font-size:14px">(${S.clicks}/${clicksPerBox()})</span></button>
+      <p class="muted">${S.autoMiners>0 ? '🤖 자동 채굴 로봇 '+S.autoMiners+'대 가동 중 (오프라인 포함)' : '상점에서 자동 채굴 로봇을 살 수 있어요'}</p>
+    </div>
+    <div class="card">
+      <h3>🎒 가방 (${S.bag.length}/${S.bagCap})</h3>
+      <p class="row"><span>⛰️ 광물 <b class="count">${m}</b></span>
+        <span><button class="act ghost" id="sm1">1개 팔기</button><button class="act" id="sm2">모두 팔기</button></span></p>
+      <p class="row"><span>💎 보석 <b class="count">${g}</b></span>
+        <span><button class="act ghost" id="sg1">1개 팔기</button><button class="act" id="sg2">모두 팔기</button></span></p>
+      <p class="muted">가방이 꽉 차면 가장 오래된 것이 시세 50%에 자동 판매돼요.</p>
+    </div>`;
+  document.getElementById('pick').onclick = mineClick;
+  document.getElementById('sm1').onclick = ()=>sellOne('mineral');
+  document.getElementById('sm2').onclick = ()=>sellAll('mineral');
+  document.getElementById('sg1').onclick = ()=>sellOne('gem');
+  document.getElementById('sg2').onclick = ()=>sellAll('gem');
+}
+
+function renderFactory(){
+  const el = document.getElementById('tab-factory');
+  const now = Date.now();
+  if(S.factory==='locked'){
+    el.innerHTML = `<div class="card lock">
+      <div class="icon">🏚️</div><h3>낡은 공장</h3>
+      <p>잠겨 있어요. <b>100원</b>을 내면 인수할 수 있어요.</p>
+      <button class="act" id="unlock">100원에 인수하기</button></div>`;
+    document.getElementById('unlock').onclick = unlockFactory;
+  } else if(S.factory==='repairing_paid'){
+    el.innerHTML = `<div class="card lock">
+      <div class="icon">🔧</div><h3>정비사 호출</h3>
+      <p>공장이 낡아서 수리가 필요해요. 수리비 <b>50원</b>.</p>
+      <p class="muted">수리는 1~24시간이 걸리고, 시간이 지나야 가동돼요.</p>
+      <button class="act" id="repair">정비사 부르기 (50원)</button></div>`;
+    document.getElementById('repair').onclick = startRepair;
+  } else if(S.factory==='repairing'){
+    el.innerHTML = `<div class="card lock">
+      <div class="icon">⏳</div><h3>수리 중...</h3>
+      <p>오픈까지 남은 시간</p>
+      <p class="count" id="cd">${fmtDur(repairRemain(now))}</p>
+      <p class="muted">게임을 꺼둬도 시간은 흘러가요.</p></div>`;
+  } else { // running
+    const parts = PART_TYPES.map(t=>`<div>${PART_ICON[t]}<b>${S.partsStock[t]}</b>${t}</div>`).join('');
+    el.innerHTML = `
+      <div class="card">
+        <h3>① 가공 로봇 (광물 → 부품)</h3>
+        <p>보유 <b class="count">${S.processBots}</b>대 · 광물 1상자 → 부품 1개</p>
+        <button class="act" id="buyP">가공 로봇 사기 (100원)</button>
+        <div class="parts">${parts}</div>
+      </div>
+      <div class="card">
+        <h3>② 조립 로봇 (부품 → 자동차)</h3>
+        <p>보유 <b class="count">${S.assembleBots}</b>대 · 부품 10종 한 세트 → 자동차 1대</p>
+        <button class="act" id="buyA">조립 로봇 사기 (100원)</button>
+      </div>
+      <div class="card">
+        <h3>🚗 차고 (${S.garage.length}/${S.garageCap})</h3>
+        <p>자동차 시세 <span class="price">${S.carPrice}원</span> ${arrow(S.carPrice,S.carPrev)}</p>
+        <button class="act ghost" id="sc1">1대 팔기</button>
+        <button class="act" id="sc2">모두 팔기</button>
+        <p class="muted">차고가 꽉 차면 가장 오래된 차가 시세 50%에 자동 판매돼요.</p>
+      </div>`;
+    document.getElementById('buyP').onclick = buyProcessBot;
+    document.getElementById('buyA').onclick = buyAssembleBot;
+    document.getElementById('sc1').onclick = sellCar;
+    document.getElementById('sc2').onclick = sellAllCars;
+  }
+}
+
+function renderShop(){
+  const cards = Object.keys(UPG).map(key=>{
+    const u=UPG[key], lv=S.upgrades[key], maxed=lv>=u.max, cost=upgradeCost(key);
+    return `<div class="card">
+      <h3>${u.icon} ${u.name} <span class="muted">Lv.${lv}/${u.max}</span></h3>
+      <p>${u.desc}</p>
+      <button class="act" data-up="${key}" ${maxed?'disabled':''}>${maxed?'최대 레벨':cost+'원에 구매'}</button>
+    </div>`;
+  }).join('');
+  const el = document.getElementById('tab-shop');
+  el.innerHTML = `<div class="card"><h3>🛒 상점</h3><p class="muted">효율 장비와 자동 채굴 로봇을 살 수 있어요. 살수록 가격이 올라가요.</p></div>` + cards;
+  el.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>buyUpgrade(b.dataset.up));
+}
+
+function render(){
+  renderTop();
+  if(!document.getElementById('tab-mine').hidden) renderMine();
+  if(!document.getElementById('tab-factory').hidden) renderFactory();
+  if(!document.getElementById('tab-shop').hidden) renderShop();
+}
+
+/* ===================== BOOT & LOOP ===================== */
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+
+let lastTick = Date.now();
+function tick(){
+  const now = Date.now();
+  const dt = (now - lastTick)/1000; lastTick = now;
+  stepPrices(now);
+  factoryReady(now);
+  runMining(dt);
+  runProduction(dt);
+  checkMilestones();
+  render();
+}
+
+// 오프라인 정산 후 시작
+const off = settleOffline();
+render();
+if(off){ setTimeout(()=>toast(`그새 광물 ${off.mined} · 부품 ${off.parts} · 자동차 ${off.cars}대 생산했어요!`), 400); }
+
+setInterval(tick, 200);
+setInterval(save, 5000);
+window.addEventListener('beforeunload', save);
+
+/* ===================== TEST HOOKS ===================== */
+window.__test = {
+  get S(){return S;}, defaultState, load, save,
+  priceAfter, stepPrices, addToBag, mineClick, sellOne, sellAll,
+  unlockFactory, startRepair, factoryReady, repairRemain,
+  buyProcessBot, buyAssembleBot, runProduction, addToGarage, sellCar, sellAllCars,
+  runMining, upgradeCost, buyUpgrade, settleOffline, render
+};
+</script>
+</body>
+</html>
