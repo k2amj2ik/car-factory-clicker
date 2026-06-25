@@ -91,6 +91,86 @@
     .lock { text-align: center; padding: 10px; }
     .lock .icon { font-size: 48px; }
     .count { font-size: 26px; font-weight: bold; color: #333; }
+
+    /* ===== 공장 생산 라인 ===== */
+    .factory-floor {
+      background: linear-gradient(180deg, #455a64 0%, #37474f 100%);
+      border-radius: 16px; padding: 14px 12px; color: #eceff1; margin-bottom: 12px;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.15);
+    }
+    .factory-floor h3 { color: #ffd54f; margin: 0 0 12px; font-size: 15px; }
+    .stage { display: flex; align-items: center; gap: 6px; }
+    .station {
+      flex: 0 0 auto; width: 70px; text-align: center;
+      background: #263238; border: 2px solid #546e7a; border-radius: 12px; padding: 8px 2px;
+    }
+    .station .face { font-size: 26px; line-height: 1; }
+    .station .lbl { font-size: 10px; color: #b0bec5; margin-top: 3px; }
+    .station .num { font-size: 13px; font-weight: bold; color: #ffd54f; }
+    .station.active .face { animation: work .8s ease-in-out infinite; }
+    @keyframes work { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-3px) rotate(3deg)} }
+
+    /* 컨베이어 벨트 */
+    .belt {
+      flex: 1 1 auto; height: 26px; position: relative; overflow: hidden;
+      background: #212121; border-top: 3px solid #616161; border-bottom: 3px solid #616161; border-radius: 4px;
+    }
+    .belt::before {
+      content: ''; position: absolute; inset: 0;
+      background: repeating-linear-gradient(90deg, #424242 0 10px, #303030 10px 20px);
+      animation: beltmove .6s linear infinite;
+    }
+    .belt.stopped::before { animation: none; opacity: .5; }
+    @keyframes beltmove { from{background-position:0 0} to{background-position:20px 0} }
+    .belt .item {
+      position: absolute; top: 50%; transform: translateY(-50%); font-size: 16px;
+      animation: ride 2.4s linear infinite;
+    }
+    @keyframes ride { from{left:-12%} to{left:108%} }
+    .belt.stopped .item { animation-play-state: paused; opacity:.4; }
+
+    /* 부품 선반 */
+    .shelf { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; }
+    .shelf div { text-align: center; font-size: 11px; background: #263238; border-radius: 8px; padding: 5px 0; color:#cfd8dc; }
+    .shelf div b { display: block; font-size: 16px; color:#fff; }
+    .shelf div.empty { opacity: .35; }
+
+    /* 생산 통계 패널 */
+    .stats { display: flex; justify-content: space-around; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .stat { text-align: center; flex: 1; min-width: 70px; }
+    .stat .v { font-size: 17px; font-weight: bold; color: #fff; }
+    .stat .k { font-size: 11px; color: #b0bec5; }
+    .control { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .control button { flex:1; min-width:130px; }
+
+    /* ===== 광산 채굴 장면 ===== */
+    .mine-scene {
+      position: relative; height: 230px; border-radius: 16px; overflow: hidden;
+      background: radial-gradient(circle at 50% 38%, #6d4c41 0%, #4e342e 45%, #3e2723 100%);
+      box-shadow: inset 0 0 50px rgba(0,0,0,.65); cursor: pointer; margin-top: 8px;
+      border: 3px solid #3e2723;
+    }
+    .mine-scene::after { /* 동굴 바위 질감 */
+      content:''; position:absolute; inset:0; opacity:.18; pointer-events:none;
+      background:
+        radial-gradient(circle at 20% 30%, #000 0 6px, transparent 7px),
+        radial-gradient(circle at 70% 60%, #000 0 8px, transparent 9px),
+        radial-gradient(circle at 85% 25%, #000 0 5px, transparent 6px),
+        radial-gradient(circle at 35% 75%, #000 0 7px, transparent 8px);
+    }
+    .mine-scene .depthlbl { position:absolute; top:8px; left:12px; color:#bcaaa4; font-size:12px; letter-spacing:1px; }
+    .mine-scene .rock { position:absolute; left:50%; top:54%; transform:translate(-50%,-50%); font-size:96px; filter: drop-shadow(0 6px 6px rgba(0,0,0,.5)); }
+    .mine-scene.hit .rock { animation: rockshake .18s; }
+    @keyframes rockshake { 0%,100%{transform:translate(-50%,-50%)} 30%{transform:translate(-54%,-50%) rotate(-5deg) scale(.97)} 70%{transform:translate(-46%,-50%) rotate(5deg)} }
+    .mine-scene .tool { position:absolute; right:22%; top:14%; font-size:50px; transform-origin:90% 90%; transform: rotate(-35deg); filter: drop-shadow(0 3px 3px rgba(0,0,0,.5)); }
+    .mine-scene.hit .tool { animation: swing .18s ease-in; }
+    @keyframes swing { 0%{transform:rotate(-35deg)} 55%{transform:rotate(22deg)} 100%{transform:rotate(-35deg)} }
+    .mine-scene .hint { position:absolute; bottom:10px; width:100%; text-align:center; color:#d7ccc8; font-size:13px; font-weight:bold; text-shadow:0 1px 2px #000; }
+    .mine-scene.hit .hint { opacity:.4; }
+    .chip { position:absolute; font-size:22px; pointer-events:none; animation: fly .7s ease-out forwards; z-index:5; }
+    @keyframes fly { 0%{opacity:1; transform:translateY(0) scale(1)} 100%{opacity:0; transform:translate(var(--dx,0), -70px) scale(.5)} }
+    .flash { position:absolute; inset:0; background:radial-gradient(circle,#fff8 0%,transparent 60%); pointer-events:none; animation: flash .35s ease-out forwards; }
+    @keyframes flash { from{opacity:.9} to{opacity:0} }
   </style>
 </head>
 <body>
@@ -184,13 +264,27 @@ function addToBag(item){
   S.bag.push(item);
 }
 function mineClick(){
+  let got=false, gem=false;
   S.clicks++;
   if(S.clicks >= clicksPerBox()){
-    S.clicks = 0;
+    S.clicks = 0; got=true;
     addToBag({type:'mineral'});
-    if(Math.random() < gemChance()){ addToBag({type:'gem'}); toast('💎 보석을 발견했어요!'); }
+    if(Math.random() < gemChance()){ addToBag({type:'gem'}); gem=true; toast('💎 보석을 발견했어요!'); }
   }
-  save(); render();
+  save(); liveUpdate();
+  return {got, gem};
+}
+function mineTap(){
+  const scene=document.getElementById('mineScene'); if(!scene){ mineClick(); return; }
+  const r = mineClick();
+  scene.classList.remove('hit'); void scene.offsetWidth; scene.classList.add('hit');
+  setTimeout(()=>scene.classList.remove('hit'),180);
+  const chip=document.createElement('span'); chip.className='chip';
+  chip.textContent = r.gem ? '💎' : (r.got ? '🪨' : '✦');
+  chip.style.left=(42+Math.random()*16)+'%'; chip.style.top=(46+Math.random()*8)+'%';
+  chip.style.setProperty('--dx', (Math.random()*40-20)+'px');
+  scene.appendChild(chip); setTimeout(()=>chip.remove(),720);
+  if(r.got){ const f=document.createElement('div'); f.className='flash'; scene.appendChild(f); setTimeout(()=>f.remove(),360); }
 }
 function sellOne(type){
   const i = S.bag.findIndex(x=>x.type===type);
@@ -233,22 +327,24 @@ function addToGarage(){
   S.garage.push({ts:Date.now()});
 }
 function botInterval(){ return Math.max(0.2, 1 - 0.1*S.upgrades.botspeed); }
+// 분수 생산분 누적(carry) — 실시간 작은 dt에서도 누락 없이 생산
+let procCarry=0, asmCarry=0, mineCarry=0;
 function runProduction(seconds){
   const made = {parts:0, cars:0};
   if(S.factory!=='running') return made;
   const rate = 1/botInterval();
-  let capacity = Math.floor(S.processBots * rate * seconds);
-  while(capacity-- > 0){
-    const mi = S.bag.findIndex(x=>x.type==='mineral'); if(mi<0) break;
+  procCarry += S.processBots * rate * seconds;
+  while(procCarry >= 1){
+    const mi = S.bag.findIndex(x=>x.type==='mineral'); if(mi<0){ procCarry=Math.min(procCarry,1); break; }
     S.bag.splice(mi,1);
     const t = PART_TYPES[S.processIdx % PART_TYPES.length]; S.processIdx++;
-    S.partsStock[t]++; made.parts++;
+    S.partsStock[t]++; made.parts++; procCarry -= 1;
   }
-  let acap = Math.floor(S.assembleBots * rate * seconds);
-  while(acap-- > 0){
-    if(!PART_TYPES.every(t=>S.partsStock[t]>=1)) break;
+  asmCarry += S.assembleBots * rate * seconds;
+  while(asmCarry >= 1){
+    if(!PART_TYPES.every(t=>S.partsStock[t]>=1)){ asmCarry=Math.min(asmCarry,1); break; }
     PART_TYPES.forEach(t=>S.partsStock[t]--);
-    addToGarage(); made.cars++;
+    addToGarage(); made.cars++; asmCarry -= 1;
   }
   return made;
 }
@@ -259,8 +355,9 @@ function sellAllCars(){ const n=S.garage.length; if(!n){toast('자동차가 없�
 function autoMineInterval(){ return 3; }
 function runMining(seconds){
   if(S.autoMiners<=0) return 0;
-  let n = Math.floor(S.autoMiners * seconds / autoMineInterval());
-  for(let i=0;i<n;i++){ addToBag({type:'mineral'}); if(Math.random()<gemChance()) addToBag({type:'gem'}); }
+  mineCarry += S.autoMiners * seconds / autoMineInterval();
+  let n=0;
+  while(mineCarry >= 1){ addToBag({type:'mineral'}); if(Math.random()<gemChance()) addToBag({type:'gem'}); mineCarry-=1; n++; }
   return n;
 }
 
@@ -327,23 +424,29 @@ function renderMine(){
   const m = S.bag.filter(x=>x.type==='mineral').length, g = S.bag.filter(x=>x.type==='gem').length;
   const pct = Math.round(100*S.clicks/clicksPerBox());
   document.getElementById('tab-mine').innerHTML = `
-    <div class="card">
+    <div class="card" style="padding:12px">
       <h3>⛏️ 광산</h3>
-      <p>광물 시세 <span class="price">${S.mineralPrice}원</span> ${arrow(S.mineralPrice,S.mineralPrev)}
-         · 보석 <span class="price">${S.mineralPrice*5}원</span></p>
-      <div class="gauge"><i style="width:${pct}%"></i></div>
-      <button id="pick" class="big">⛏️ 곡갱이질<br><span style="font-size:14px">(${S.clicks}/${clicksPerBox()})</span></button>
-      <p class="muted">${S.autoMiners>0 ? '🤖 자동 채굴 로봇 '+S.autoMiners+'대 가동 중 (오프라인 포함)' : '상점에서 자동 채굴 로봇을 살 수 있어요'}</p>
+      <p style="margin-top:0">광물 시세 <span class="price" id="lv_mPrice">${S.mineralPrice}원</span> <span id="lv_mArrow">${arrow(S.mineralPrice,S.mineralPrev)}</span>
+         · 💎 보석 <span class="price" id="lv_gPrice">${S.mineralPrice*5}원</span></p>
+      <div class="mine-scene" id="mineScene">
+        <div class="depthlbl">⛏️ 깊은 광산</div>
+        <span class="tool" id="mineTool">⛏️</span>
+        <span class="rock" id="mineRock">🪨</span>
+        <div class="hint" id="mineHint">바위를 탭해서 곡갱이질!</div>
+      </div>
+      <div class="gauge" style="margin-top:10px"><i id="lv_gauge" style="width:${pct}%"></i></div>
+      <p class="muted" style="text-align:center;margin:6px 0">다음 광물까지 <b id="lv_clk">${S.clicks}</b> / ${clicksPerBox()} 번</p>
+      <p class="muted" id="lv_autoNote" style="text-align:center">${S.autoMiners>0 ? '🤖 자동 채굴 로봇 '+S.autoMiners+'대 가동 중 (오프라인 포함)' : '상점에서 자동 채굴 로봇을 살 수 있어요'}</p>
     </div>
     <div class="card">
-      <h3>🎒 가방 (${S.bag.length}/${S.bagCap})</h3>
-      <p class="row"><span>⛰️ 광물 <b class="count">${m}</b></span>
+      <h3 id="lv_bagHdr">🎒 가방 (${S.bag.length}/${S.bagCap})</h3>
+      <p class="row"><span>⛰️ 광물 <b class="count" id="lv_min">${m}</b></span>
         <span><button class="act ghost" id="sm1">1개 팔기</button><button class="act" id="sm2">모두 팔기</button></span></p>
-      <p class="row"><span>💎 보석 <b class="count">${g}</b></span>
+      <p class="row"><span>💎 보석 <b class="count" id="lv_gem">${g}</b></span>
         <span><button class="act ghost" id="sg1">1개 팔기</button><button class="act" id="sg2">모두 팔기</button></span></p>
       <p class="muted">가방이 꽉 차면 가장 오래된 것이 시세 50%에 자동 판매돼요.</p>
     </div>`;
-  document.getElementById('pick').onclick = mineClick;
+  document.getElementById('mineScene').onclick = mineTap;
   document.getElementById('sm1').onclick = ()=>sellOne('mineral');
   document.getElementById('sm2').onclick = ()=>sellAll('mineral');
   document.getElementById('sg1').onclick = ()=>sellOne('gem');
@@ -373,24 +476,66 @@ function renderFactory(){
       <p class="count" id="cd">${fmtDur(repairRemain(now))}</p>
       <p class="muted">게임을 꺼둬도 시간은 흘러가요.</p></div>`;
   } else { // running
-    const parts = PART_TYPES.map(t=>`<div>${PART_ICON[t]}<b>${S.partsStock[t]}</b>${t}</div>`).join('');
+    const rate = 1/botInterval();
+    const minerals = S.bag.filter(x=>x.type==='mineral').length;
+    const hasSet = PART_TYPES.every(t=>S.partsStock[t]>=1);
+    const belt1on = S.processBots>0 && minerals>0;
+    const belt2on = S.assembleBots>0 && hasSet;
+    const procRate = (S.processBots*rate).toFixed(1);   // 부품/초 (정격)
+    const asmRate  = (S.assembleBots*rate).toFixed(1);  // 자동차/초 (정격)
+    const mineRate = (S.autoMiners/autoMineInterval()).toFixed(1); // 광물/초 (자동)
+
+    const beltItems = (icon) =>
+      `<span class="item" style="animation-delay:0s">${icon}</span>
+       <span class="item" style="animation-delay:.8s">${icon}</span>
+       <span class="item" style="animation-delay:1.6s">${icon}</span>`;
+
+    const shelf = PART_TYPES.map(t=>
+      `<div class="${S.partsStock[t]>0?'':'empty'}">${PART_ICON[t]}<b>${S.partsStock[t]}</b>${t}</div>`).join('');
+
     el.innerHTML = `
-      <div class="card">
-        <h3>① 가공 로봇 (광물 → 부품)</h3>
-        <p>보유 <b class="count">${S.processBots}</b>대 · 광물 1상자 → 부품 1개</p>
-        <button class="act" id="buyP">가공 로봇 사기 (100원)</button>
-        <div class="parts">${parts}</div>
+      <div class="factory-floor">
+        <h3>🏭 생산 라인 <span style="color:#69f0ae">● 가동 중</span></h3>
+
+        <div class="stage">
+          <div class="station ${minerals>0?'active':''}" id="lv_stMin"><div class="face">⛰️</div><div class="lbl">광물</div><div class="num" id="lv_minerals">${minerals}</div></div>
+          <div class="belt ${belt1on?'':'stopped'}" id="lv_belt1">${beltItems('🪨')}</div>
+          <div class="station ${belt1on?'active':''}" id="lv_stProc"><div class="face">🤖</div><div class="lbl">가공</div><div class="num" id="lv_procN">${S.processBots}대</div></div>
+        </div>
+
+        <div class="shelf" id="lv_shelf">${shelf}</div>
+
+        <div class="stage" style="margin-top:10px">
+          <div class="station ${hasSet?'active':''}" id="lv_stSet"><div class="face">🧰</div><div class="lbl">부품세트</div><div class="num" id="lv_setN">${hasSet?'준비':'대기'}</div></div>
+          <div class="belt ${belt2on?'':'stopped'}" id="lv_belt2a">${beltItems('⚙️')}</div>
+          <div class="station ${belt2on?'active':''}" id="lv_stAsm"><div class="face">🤖</div><div class="lbl">조립</div><div class="num" id="lv_asmN">${S.assembleBots}대</div></div>
+          <div class="belt ${belt2on?'':'stopped'}" id="lv_belt2b">${beltItems('🚗')}</div>
+          <div class="station ${S.garage.length>0?'active':''}" id="lv_stGar"><div class="face">🚗</div><div class="lbl">차고</div><div class="num" id="lv_garN">${S.garage.length}/${S.garageCap}</div></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="v" id="lv_mineR">${mineRate}/s</div><div class="k">⛏️ 자동채굴</div></div>
+          <div class="stat"><div class="v" id="lv_procR">${procRate}/s</div><div class="k">🛠️ 부품 가공</div></div>
+          <div class="stat"><div class="v" id="lv_asmR">${asmRate}/s</div><div class="k">🚗 자동차 조립</div></div>
+        </div>
       </div>
+
       <div class="card">
-        <h3>② 조립 로봇 (부품 → 자동차)</h3>
-        <p>보유 <b class="count">${S.assembleBots}</b>대 · 부품 10종 한 세트 → 자동차 1대</p>
-        <button class="act" id="buyA">조립 로봇 사기 (100원)</button>
+        <h3>🔧 로봇 증설</h3>
+        <div class="control">
+          <button class="act" id="buyP">① 가공 로봇 사기 (100원)</button>
+          <button class="act" id="buyA">② 조립 로봇 사기 (100원)</button>
+        </div>
+        <p class="muted">가공 로봇은 가방의 광물을 부품으로, 조립 로봇은 부품 10종 한 세트를 자동차로 만들어요. 두 로봇 수의 균형이 중요해요.</p>
       </div>
+
       <div class="card">
-        <h3>🚗 차고 (${S.garage.length}/${S.garageCap})</h3>
-        <p>자동차 시세 <span class="price">${S.carPrice}원</span> ${arrow(S.carPrice,S.carPrev)}</p>
-        <button class="act ghost" id="sc1">1대 팔기</button>
-        <button class="act" id="sc2">모두 팔기</button>
+        <h3 id="lv_garHdr">🚗 차고 출고 (${S.garage.length}/${S.garageCap})</h3>
+        <p>자동차 시세 <span class="price" id="lv_carPrice">${S.carPrice}원</span> <span id="lv_carArrow">${arrow(S.carPrice,S.carPrev)}</span></p>
+        <div class="control">
+          <button class="act ghost" id="sc1">1대 팔기</button>
+          <button class="act" id="sc2">모두 팔기 (<span id="lv_sellN">${S.garage.length}</span>대)</button>
+        </div>
         <p class="muted">차고가 꽉 차면 가장 오래된 차가 시세 50%에 자동 판매돼요.</p>
       </div>`;
     document.getElementById('buyP').onclick = buyProcessBot;
@@ -421,10 +566,44 @@ function render(){
   if(!document.getElementById('tab-shop').hidden) renderShop();
 }
 
+// 틱마다 호출: innerHTML 재생성 없이 숫자·상태만 갱신 (CSS 애니메이션 보존)
+function setTxt(id,v){ const e=document.getElementById(id); if(e&&e.textContent!==''+v) e.textContent=v; }
+function tog(id, cls, on){ const e=document.getElementById(id); if(e) e.classList.toggle(cls, on); }
+function liveUpdate(){
+  if(!document.getElementById('tab-mine').hidden){
+    const m = S.bag.filter(x=>x.type==='mineral').length, g = S.bag.filter(x=>x.type==='gem').length;
+    setTxt('lv_mPrice', S.mineralPrice+'원'); setTxt('lv_gPrice', (S.mineralPrice*5)+'원');
+    const ar=document.getElementById('lv_mArrow'); if(ar) ar.innerHTML=arrow(S.mineralPrice,S.mineralPrev);
+    const gz=document.getElementById('lv_gauge'); if(gz) gz.style.width=Math.round(100*S.clicks/clicksPerBox())+'%';
+    setTxt('lv_clk', S.clicks); setTxt('lv_min', m); setTxt('lv_gem', g);
+    setTxt('lv_bagHdr', '🎒 가방 ('+S.bag.length+'/'+S.bagCap+')');
+  }
+  if(!document.getElementById('tab-factory').hidden && S.factory==='running'){
+    const rate=1/botInterval();
+    const minerals=S.bag.filter(x=>x.type==='mineral').length;
+    const hasSet=PART_TYPES.every(t=>S.partsStock[t]>=1);
+    const belt1on=S.processBots>0&&minerals>0, belt2on=S.assembleBots>0&&hasSet;
+    setTxt('lv_minerals', minerals); setTxt('lv_procN', S.processBots+'대'); setTxt('lv_asmN', S.assembleBots+'대');
+    setTxt('lv_setN', hasSet?'준비':'대기'); setTxt('lv_garN', S.garage.length+'/'+S.garageCap);
+    tog('lv_belt1','stopped',!belt1on); tog('lv_belt2a','stopped',!belt2on); tog('lv_belt2b','stopped',!belt2on);
+    tog('lv_stMin','active',minerals>0); tog('lv_stProc','active',belt1on);
+    tog('lv_stSet','active',hasSet); tog('lv_stAsm','active',belt2on); tog('lv_stGar','active',S.garage.length>0);
+    const sh=document.getElementById('lv_shelf');
+    if(sh) sh.innerHTML=PART_TYPES.map(t=>`<div class="${S.partsStock[t]>0?'':'empty'}">${PART_ICON[t]}<b>${S.partsStock[t]}</b>${t}</div>`).join('');
+    setTxt('lv_mineR',(S.autoMiners/autoMineInterval()).toFixed(1)+'/s');
+    setTxt('lv_procR',(S.processBots*rate).toFixed(1)+'/s');
+    setTxt('lv_asmR',(S.assembleBots*rate).toFixed(1)+'/s');
+    setTxt('lv_garHdr','🚗 차고 출고 ('+S.garage.length+'/'+S.garageCap+')');
+    setTxt('lv_carPrice', S.carPrice+'원'); const ca=document.getElementById('lv_carArrow'); if(ca) ca.innerHTML=arrow(S.carPrice,S.carPrev);
+    setTxt('lv_sellN', S.garage.length);
+  }
+}
+
 /* ===================== BOOT & LOOP ===================== */
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
 
 let lastTick = Date.now();
+let lastFactory = S.factory;
 function tick(){
   const now = Date.now();
   const dt = (now - lastTick)/1000; lastTick = now;
@@ -433,7 +612,12 @@ function tick(){
   runMining(dt);
   runProduction(dt);
   checkMilestones();
-  render();
+  renderTop();
+  if(S.factory !== lastFactory){ lastFactory = S.factory; render(); return; }   // 상태 전환 시 전체 재구성
+  if(S.factory==='repairing' && !document.getElementById('tab-factory').hidden){
+    const cd=document.getElementById('cd'); if(cd) cd.textContent=fmtDur(repairRemain(now));
+  }
+  liveUpdate();
 }
 
 // 오프라인 정산 후 시작
